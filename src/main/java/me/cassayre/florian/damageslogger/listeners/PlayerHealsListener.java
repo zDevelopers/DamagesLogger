@@ -6,6 +6,7 @@ import me.cassayre.florian.damageslogger.report.record.HealRecord.HealingType;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -19,7 +20,7 @@ public class PlayerHealsListener implements Listener
         this.manager = manager;
     }
 
-    @EventHandler
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityRegainHealth(EntityRegainHealthEvent e)
     {
         if(e.getEntity() instanceof Player)
@@ -44,7 +45,7 @@ public class PlayerHealsListener implements Listener
         }
     }
 
-    @EventHandler
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerItemConsume(PlayerItemConsumeEvent e)
     {
         final Material material = e.getItem().getType();

@@ -87,6 +87,8 @@ public class ReportEvent
         jsonIcon.addProperty("type", icon.name());
         jsonIcon.addProperty(icon.attributeKey, iconAttribute);
 
+        json.add("icon", jsonIcon);
+
         return json;
     }
 

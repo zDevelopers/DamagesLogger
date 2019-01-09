@@ -98,6 +98,12 @@ public class Report
      */
     private boolean stopTrackOnDisconnection = false;
 
+    /**
+     * If auto-track is enabled, and this option is true, events for players
+     * deaths will be automatically added.
+     */
+    private boolean addDefaultEvents = true;
+
     /*
      * The settings of this report.
      */
@@ -144,6 +150,27 @@ public class Report
     public Report title(final String title) { this.title = title; return this; }
 
     /**
+     * Sets the start date of this report. All events/heals/damages/etc. dates will
+     * be displayed relative to this date.
+     *
+     * If not modified, this will be the instant where the instance was created.
+     *
+     * @param startDate The report's start date (as a milli-timestamp).
+     * @return Current instance, for method chaining.
+     */
+    public Report starts(final long startDate) { this.startDate = startDate; return this; }
+
+    /**
+     * Sets now as the start date of this report. All events/heals/damages/etc.
+     * dates will be displayed relative to this date.
+     *
+     * If not modified, this will be the instant where the instance was created.
+     *
+     * @return Current instance, for method chaining.
+     */
+    public Report startsNow() { this.startDate = System.currentTimeMillis(); return this; }
+
+    /**
      * Enables or disables auto-track of all players damages & heals. If disabled,
      * you'll have to manually register damages & heals for them to be recorded.
      *
@@ -178,6 +205,15 @@ public class Report
      * @return Current instance, for method chaining.
      */
     public Report stopTrackOnDisconnection(final boolean stopTrackOnDisconnection) { this.stopTrackOnDisconnection = stopTrackOnDisconnection; return this; }
+
+    /**
+     * If auto-track is enabled, and this option is true, events for players deaths
+     * will be automatically added.
+     *
+     * @param addDefaultEvents {@code true} to automatically add default events.
+     * @return Current instance, for method chaining.
+     */
+    public Report addDefaultEvents(final boolean addDefaultEvents) { this.addDefaultEvents = addDefaultEvents; return this; }
 
     /**
      * Regenerates the UUID for this report. Useful if you want to save multiple versions of this
@@ -423,14 +459,19 @@ public class Report
         return autoTrackNewPlayers;
     }
 
-    public boolean isStopingTrackOnDeath()
+    public boolean isStoppingTrackOnDeath()
     {
         return stopTrackOnDeath;
     }
 
-    public boolean isStopingTrackOnDisconnection()
+    public boolean isStoppingTrackOnDisconnection()
     {
         return stopTrackOnDisconnection;
+    }
+
+    public boolean isAddingDefaultEvents()
+    {
+        return addDefaultEvents;
     }
 
     public Set<ReportPlayer> getPlayers()
