@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>DamagesLogger</groupId>
+    <groupId>me.cassayre.florian</groupId>
     <artifactId>DamagesLogger</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <build>
@@ -27,9 +27,37 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <minimizeJar>true</minimizeJar>
+                    <artifactSet>
+                        <includes>
+                            <include>fr.zcraft:zlib</include>
+                            <include>fr.zcraft:zteams</include>
+                        </includes>
+                    </artifactSet>
+                    <relocations>
+                        <relocation>
+                            <pattern>fr.zcraft.zlib</pattern>
+                            <shadedPattern>me.cassayre.florian.DamagesLogger.zlib</shadedPattern>
+                        </relocation>
+                    </relocations>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -39,6 +67,10 @@
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
         </repository>
+        <repository>
+            <id>zDevelopers</id>
+            <url>http://maven.carrade.eu/artifactory/snapshots</url>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -46,6 +78,11 @@
             <artifactId>bukkit</artifactId>
             <version>1.8.3-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>fr.zcraft</groupId>
+            <artifactId>zlib</artifactId>
+            <version>0.99-SNAPSHOT</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
         <dependency>

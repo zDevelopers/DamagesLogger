@@ -1,52 +1,52 @@
 package me.cassayre.florian.damageslogger;
 
-import me.cassayre.florian.damageslogger.commands.MainCommandExecutor;
-import me.cassayre.florian.damageslogger.listeners.PlayerConnectionListener;
-import me.cassayre.florian.damageslogger.listeners.PlayerDamageNaturalListener;
-import me.cassayre.florian.damageslogger.listeners.PlayerDamagePlayerListener;
-import me.cassayre.florian.damageslogger.listeners.PlayerHealingListener;
-import org.bukkit.plugin.java.JavaPlugin;
+import fr.zcraft.zlib.components.commands.Commands;
+import fr.zcraft.zlib.components.i18n.I18n;
+import fr.zcraft.zlib.core.ZPlugin;
+import me.cassayre.florian.damageslogger.commands.InfoCommand;
+import me.cassayre.florian.damageslogger.commands.StartCommand;
+import me.cassayre.florian.damageslogger.commands.StopCommand;
+import me.cassayre.florian.damageslogger.report.Report;
 
-public class DamagesLogger extends JavaPlugin
+public class DamagesLogger extends ZPlugin
 {
     private static DamagesLogger instance = null;
 
-    private GameRecorder currentRecorder = null;
+    private ReportsManager manager = null;
+    private Report report = null;
 
     @Override
     public void onEnable()
     {
         instance = this;
+        manager = loadComponent(ReportsManager.class);
 
-        this.getServer().getPluginManager().registerEvents(new PlayerConnectionListener(), this);
-        this.getServer().getPluginManager().registerEvents(new PlayerDamageNaturalListener(), this);
-        this.getServer().getPluginManager().registerEvents(new PlayerDamagePlayerListener(), this);
-        this.getServer().getPluginManager().registerEvents(new PlayerHealingListener(), this);
+        loadComponents(Commands.class, I18n.class);
 
-        this.getServer().getPluginCommand("damageslogger").setExecutor(new MainCommandExecutor());
-    }
-
-    @Override
-    public void onDisable()
-    {
-
+        Commands.register("damageslogger", StartCommand.class, StopCommand.class, InfoCommand.class);
     }
 
     public static DamagesLogger get()
     {
-        if(instance == null)
-            throw new IllegalStateException();
-
+        if (instance == null) throw new IllegalStateException();
         return instance;
     }
 
-    public GameRecorder getCurrentRecorder()
+    public Report getReport()
     {
-        return currentRecorder;
+        return report;
     }
 
-    public void setCurrentRecorder(GameRecorder currentRecorder)
+    public void setReport(final Report report)
     {
-        this.currentRecorder = currentRecorder;
+        if (report != null) manager.registerReport(report);
+        else manager.unregisterReport(this.report);
+
+        this.report = report;
+    }
+
+    public ReportsManager getManager()
+    {
+        return manager;
     }
 }

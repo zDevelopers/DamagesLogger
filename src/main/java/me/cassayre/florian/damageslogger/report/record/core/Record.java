@@ -1,15 +1,18 @@
-package me.cassayre.florian.damageslogger.types.record.core;
+package me.cassayre.florian.damageslogger.report.record.core;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-public abstract class ChangeRecord
+import java.time.Instant;
+import java.util.TimeZone;
+
+public abstract class Record
 {
-    protected final Player player;
+    protected final OfflinePlayer player;
     protected long startDate, endDate, updateDate;
 
-    public ChangeRecord(Player player)
+    public Record(Player player)
     {
         this.player = player;
 
@@ -17,7 +20,7 @@ public abstract class ChangeRecord
         updateDate = startDate;
     }
 
-    public ChangeRecord(Player player, long startDate, long endDate)
+    public Record(Player player, long startDate, long endDate)
     {
         this.player = player;
 
@@ -25,7 +28,7 @@ public abstract class ChangeRecord
         this.endDate = endDate;
     }
 
-    public Player getPlayer()
+    public OfflinePlayer getPlayer()
     {
         return player;
     }
@@ -42,6 +45,7 @@ public abstract class ChangeRecord
 
         return endDate;
     }
+
 
     public boolean isEnded()
     {
@@ -78,22 +82,16 @@ public abstract class ChangeRecord
         updateDate = System.currentTimeMillis();
     }
 
-    public JsonObject toJson()
+    public boolean inCooldown(final long cooldown)
     {
-        JsonObject object = new JsonObject();
+        return System.currentTimeMillis() - updateDate <= cooldown;
+    }
 
-        JsonObject p = new JsonObject();
-        p.add("uuid", new JsonPrimitive(player.getUniqueId().toString()));
-        p.add("name", new JsonPrimitive(player.getName()));
+    public JsonObject toJSON()
+    {
+        final JsonObject json = new JsonObject();
+        json.addProperty("date", Instant.ofEpochMilli(startDate).atZone(TimeZone.getDefault().toZoneId()).toOffsetDateTime().toString());
 
-        object.add("player", p);
-
-        JsonObject dates = new JsonObject();
-        dates.add("start", new JsonPrimitive(startDate));
-        dates.add("end", new JsonPrimitive(endDate));
-
-        object.add("dates", dates);
-
-        return object;
+        return json;
     }
 }

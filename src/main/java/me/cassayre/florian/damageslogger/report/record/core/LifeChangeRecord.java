@@ -1,20 +1,18 @@
-package me.cassayre.florian.damageslogger.types.record.core;
+package me.cassayre.florian.damageslogger.report.record.core;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import org.bukkit.entity.Player;
 
-public abstract class HeartChangeRecord extends ChangeRecord
+public abstract class LifeChangeRecord extends Record implements Cloneable
 {
     protected double points;
     protected boolean isLethal;
 
-    public HeartChangeRecord(Player player, double points)
+    public LifeChangeRecord(Player player, double points)
     {
         this(player, points, false);
     }
 
-    public HeartChangeRecord(Player player, double points, boolean isLethal)
+    public LifeChangeRecord(Player player, double points, boolean isLethal)
     {
         super(player);
 
@@ -28,7 +26,7 @@ public abstract class HeartChangeRecord extends ChangeRecord
         }
     }
 
-    public HeartChangeRecord(Player player, long startDate, long endDate, double points, boolean isLethal)
+    public LifeChangeRecord(Player player, long startDate, long endDate, double points, boolean isLethal)
     {
         super(player, startDate, endDate);
 
@@ -49,8 +47,9 @@ public abstract class HeartChangeRecord extends ChangeRecord
     public void addPoints(double points, boolean isLethal)
     {
         this.points += points;
+        this.isLethal = isLethal;
 
-        if(isLethal)
+        if (isLethal)
             setEndDateNow();
         else
             update();
@@ -59,16 +58,5 @@ public abstract class HeartChangeRecord extends ChangeRecord
     public boolean isLethal()
     {
         return isLethal;
-    }
-
-    @Override
-    public JsonObject toJson()
-    {
-        JsonObject object = super.toJson();
-
-        object.add("points", new JsonPrimitive(points));
-        object.add("isLethal", new JsonPrimitive(isLethal));
-
-        return object;
     }
 }
