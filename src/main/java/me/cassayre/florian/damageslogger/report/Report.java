@@ -87,6 +87,13 @@ public class Report
     private boolean autoTrackNewPlayers = true;
 
     /**
+     * If auto-track is enabled and this option is true, if a player is added to the report
+     * while offline, its previous statistics will be automatically collected as soon as he or she
+     * come back online.
+     */
+    private boolean autoCollectPreviousStatistics = true;
+
+    /**
      * If auto-track is enabled, and this option is true, tracking will stop
      * for each player when they die.
      */
@@ -174,6 +181,8 @@ public class Report
      * Enables or disables auto-track of all players damages & heals. If disabled,
      * you'll have to manually register damages & heals for them to be recorded.
      *
+     * Enabled by default.
+     *
      * @param autoTrack {@code true} to enable auto-track.
      * @return Current instance, for method chaining.
      */
@@ -183,14 +192,32 @@ public class Report
      * If auto-track is enabled, and this option is true, players joining the server
      * will be tracked automatically.
      *
+     * Enabled by default.
+     *
      * @param autoTrackNewPlayers {@code true} to enable auto-track of new players.
      * @return Current instance, for method chaining.
      */
     public Report autoTrackNewPlayers(final boolean autoTrackNewPlayers) { this.autoTrackNewPlayers = autoTrackNewPlayers; return this; }
 
     /**
+     * If auto-track is enabled and this option is true, if a player is added to the report
+     * while offline, its previous statistics will be automatically collected as soon as he or she
+     * come back online.
+     *
+     * Enabled by default.
+     *
+     * @param autoCollectPreviousStatistics {@code true} to automatically collect previous
+     *                                      statistics when a registered player without them
+     *                                      logs in.
+     * @return Current instance, for method chaining.
+     */
+    public Report autoCollectPreviousStatistics(final boolean autoCollectPreviousStatistics) { this.autoCollectPreviousStatistics = autoCollectPreviousStatistics; return this; }
+
+    /**
      * If auto-track is enabled, and this option is true, tracking will stop
      * for each player when they die.
+     *
+     * Enabled by default.
      *
      * @param stopTrackOnDeath {@code true} to stop players' tracking when they die.
      * @return Current instance, for method chaining.
@@ -201,6 +228,8 @@ public class Report
      * If auto-track is enabled, and this option is true, tracking will stop
      * for each player when they disconnect.
      *
+     * Disabled by default.
+     *
      * @param stopTrackOnDisconnection {@code true} to stop players' tracking when they disconnect.
      * @return Current instance, for method chaining.
      */
@@ -209,6 +238,8 @@ public class Report
     /**
      * If auto-track is enabled, and this option is true, events for players deaths
      * will be automatically added.
+     *
+     * Enabled by default.
      *
      * @param addDefaultEvents {@code true} to automatically add default events.
      * @return Current instance, for method chaining.
@@ -275,6 +306,7 @@ public class Report
     {
         ensurePlayer(player);
         trackedPlayers.add(player.getUniqueId());
+        PluginLogger.info("Now tracking {0}", player.getName());
 
         return this;
     }
@@ -290,7 +322,14 @@ public class Report
      */
     public Report untrackPlayer(final OfflinePlayer player)
     {
+        ensurePlayer(player);
         trackedPlayers.remove(player.getUniqueId());
+
+        if (player.isOnline())
+        {
+            players.get(player.getUniqueId()).collectStatistics();
+        }
+
         return this;
     }
 
@@ -457,6 +496,11 @@ public class Report
     public boolean isAutoTrackingNewPlayers()
     {
         return autoTrackNewPlayers;
+    }
+
+    public boolean isAutoCollectingPreviousStatistics()
+    {
+        return autoCollectPreviousStatistics;
     }
 
     public boolean isStoppingTrackOnDeath()

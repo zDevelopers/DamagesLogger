@@ -2,6 +2,7 @@ package me.cassayre.florian.damageslogger.listeners;
 
 import fr.zcraft.zlib.components.i18n.I;
 import me.cassayre.florian.damageslogger.ReportsManager;
+import me.cassayre.florian.damageslogger.report.Report;
 import me.cassayre.florian.damageslogger.report.ReportEvent;
 import me.cassayre.florian.damageslogger.report.record.DamageRecord;
 import me.cassayre.florian.damageslogger.report.record.DamageRecord.DamageType;
@@ -29,23 +30,17 @@ public class PlayerDamagesListener implements Listener
     public void onPlayerDeath(final PlayerDeathEvent ev)
     {
         manager.getTrackedReportsFor(ev.getEntity())
-                .forEach(report ->
-                {
-                    if (report.isStoppingTrackOnDeath())
-                    {
-                        report.untrackPlayer(ev.getEntity());
-                    }
+                .filter(Report::isStoppingTrackOnDeath)
+                .forEach(report -> report.untrackPlayer(ev.getEntity()));
 
-                    if (report.isAddingDefaultEvents())
-                    {
-                        report.record(ReportEvent.withPlayer(
-                                ReportEvent.EventType.GOLD,
-                                I.t("{0} died", ev.getEntity().getName()),
-                                ev.getDeathMessage(),
-                                ev.getEntity()
-                        ));
-                    }
-                });
+        manager.getTrackedReportsFor(ev.getEntity())
+                .filter(Report::isAddingDefaultEvents)
+                .forEach(report -> report.record(ReportEvent.withPlayer(
+                        ReportEvent.EventType.GOLD,
+                        I.t("Death of {0}", ev.getEntity().getName()),
+                        ev.getDeathMessage(),
+                        ev.getEntity()
+                )));
     }
 
     @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)

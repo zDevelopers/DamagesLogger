@@ -44,6 +44,7 @@ import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -57,6 +58,13 @@ public class ReportPlayer
     private String tagLineSecondary;
     private String tagLineDetails;
 
+    private boolean hasPreviousStatistics = false;
+
+    private Map<Statistic, Integer> previousGenericStatistics = new HashMap<>();
+    private Map<Material, Integer> previousUsedStatistics = new HashMap<>();
+    private Map<Material, Integer> previousMinedStatistics = new HashMap<>();
+    private Map<Material, Integer> previousPickedUpStatistics = new HashMap<>();
+
     private Map<Statistic, Integer> genericStatistics = new HashMap<>();
     private Map<Material, Integer> usedStatistics = new HashMap<>();
     private Map<Material, Integer> minedStatistics = new HashMap<>();
@@ -66,6 +74,23 @@ public class ReportPlayer
     {
         this.uuid = player.getUniqueId();
         this.name = player.getName();
+
+        collectPreviousStatistics();
+    }
+
+    public UUID getUniqueId()
+    {
+        return uuid;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public boolean hasPreviousStatistics()
+    {
+        return hasPreviousStatistics;
     }
 
     /**
@@ -95,30 +120,97 @@ public class ReportPlayer
      */
     public boolean collectStatistics()
     {
+        return collectStatistics(
+                genericStatistics, usedStatistics, minedStatistics, pickedUpStatistics,
+                previousGenericStatistics, previousUsedStatistics, previousMinedStatistics, previousPickedUpStatistics
+        );
+    }
+
+    /**
+     * Collects and stores the statistics of the given player before the record.
+     *
+     * This allows to in fine only collect & store statistics earned during the record.
+     * This method is automatically called when this class is instantiated. But if you want
+     * another point of reference for statistics, you can re-call it anytime to set a new
+     * previous-statistics-reference.
+     *
+     * @return {@code true} if statistics could be collected (i.e. player was online).
+     */
+    public boolean collectPreviousStatistics()
+    {
+        final boolean success = collectStatistics(previousGenericStatistics, previousUsedStatistics, previousMinedStatistics, previousPickedUpStatistics);
+
+        if (!hasPreviousStatistics && success) hasPreviousStatistics = true;
+
+        return success;
+    }
+
+    /**
+     * If you don't want to collect only the statistics during the record, call this to erase
+     * all collected previous statistic. As a result, statistics will be global statistics for the
+     * player, including statistics before the record.
+     */
+    public void resetPreviousStatistics()
+    {
+        previousGenericStatistics.clear();
+        previousUsedStatistics.clear();
+        previousMinedStatistics.clear();
+        previousPickedUpStatistics.clear();
+
+        hasPreviousStatistics = false;
+    }
+
+    private boolean collectStatistics(
+            final Map<Statistic, Integer> generic,
+            final Map<Material, Integer> used,
+            final Map<Material, Integer> mined,
+            final Map<Material, Integer> pickedUp)
+    {
+        return collectStatistics(
+                generic, used, mined, pickedUp,
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                Collections.emptyMap()
+        );
+    }
+
+    private boolean collectStatistics(
+            final Map<Statistic, Integer> generic,
+            final Map<Material, Integer> used,
+            final Map<Material, Integer> mined,
+            final Map<Material, Integer> pickedUp,
+
+            final Map<Statistic, Integer> previousGeneric,
+            final Map<Material, Integer> previousUsed,
+            final Map<Material, Integer> previousMined,
+            final Map<Material, Integer> previousPickedUp)
+    {
         final Player player = Bukkit.getPlayer(uuid);
         if (player == null) return false;
 
-        genericStatistics.clear();
-        usedStatistics.clear();
-        minedStatistics.clear();
-        pickedUpStatistics.clear();
+        generic.clear();
+        used.clear();
+        mined.clear();
+        pickedUp.clear();
 
         for (Statistic statistic : Statistic.values())
         {
             if (statistic.getType() == Statistic.Type.UNTYPED)
             {
-                genericStatistics.put(statistic, player.getStatistic(statistic));
+                final int stat = player.getStatistic(statistic) - previousGeneric.getOrDefault(statistic, 0);
+                if (stat > 0) generic.put(statistic, stat);
             }
             else
             {
                 switch (statistic)
                 {
                     case MINE_BLOCK:
-                        collectSubStatistics(player, statistic, minedStatistics);
+                        collectSubStatistics(player, statistic, mined, previousMined);
                         break;
 
                     case USE_ITEM:
-                        collectSubStatistics(player, statistic, usedStatistics);
+                        collectSubStatistics(player, statistic, used, previousUsed);
                         break;
 
                     default:
@@ -128,7 +220,7 @@ public class ReportPlayer
                         // The PICKUP statistic is a sub-statistic of type ITEM.
                         if (statistic.name().equals("PICKUP"))
                         {
-                            collectSubStatistics(player, statistic, pickedUpStatistics);
+                            collectSubStatistics(player, statistic, pickedUp, previousPickedUp);
                         }
                 }
             }
@@ -144,14 +236,14 @@ public class ReportPlayer
      * @param statistic The statistic to collect.
      * @param collector The map were statistics will be stored.
      */
-    private void collectSubStatistics(final Player player, final Statistic statistic, final Map<Material, Integer> collector)
+    private void collectSubStatistics(final Player player, final Statistic statistic, final Map<Material, Integer> collector, final Map<Material, Integer> previous)
     {
         for (Material material : Material.values())
         {
             try
             {
-                final int stat = player.getStatistic(statistic, material);
-                if (stat != 0) collector.put(material, stat);
+                final int stat = player.getStatistic(statistic, material) - previous.getOrDefault(material, 0);
+                if (stat > 0) collector.put(material, stat);
             }
             catch (IllegalArgumentException ignored)
             {
@@ -233,6 +325,8 @@ public class ReportPlayer
         statistics.add("used", toJson(usedStatistics));
         statistics.add("mined", toJson(minedStatistics));
         statistics.add("picked_up", toJson(pickedUpStatistics));
+
+        json.add("statistics", statistics);
 
         return json;
     }

@@ -43,6 +43,7 @@ import me.cassayre.florian.damageslogger.listeners.PlayerConnectionListener;
 import me.cassayre.florian.damageslogger.listeners.PlayerDamagesListener;
 import me.cassayre.florian.damageslogger.listeners.PlayerHealsListener;
 import me.cassayre.florian.damageslogger.report.Report;
+import me.cassayre.florian.damageslogger.report.ReportPlayer;
 import me.cassayre.florian.damageslogger.report.record.HealRecord.HealingType;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -120,18 +121,18 @@ public class ReportsManager extends ZLibComponent
         if (backup)
         {
             backupTask = RunTask.timer(() -> reports.forEach(report -> backup(report, success -> backupErrorWarningSent = false, exception ->
-            {
-                PluginLogger.error("Unable to backup report, is the reports backup directory writable?", exception);
-
-                if (!backupErrorWarningSent)
                 {
-                    Bukkit.getOnlinePlayers().stream()
-                            .filter(Permissible::isOp)
-                            .forEach(player -> player.sendMessage(I.t("{darkred}Warning! {red}The backup file couldn't be saved, please see the console. {gray}This message won't be sent for further failure(s).")));
+                    PluginLogger.error("Unable to backup report, is the reports backup directory writable?", exception);
 
-                    backupErrorWarningSent = true;
-                }
-            })), backupInterval, backupInterval);
+                    if (!backupErrorWarningSent)
+                    {
+                        Bukkit.getOnlinePlayers().stream()
+                                .filter(Permissible::isOp)
+                                .forEach(player -> player.sendMessage(I.t("{darkred}Warning! {red}The backup file couldn't be saved, please see the console. {gray}This message won't be sent for further failure(s).")));
+
+                        backupErrorWarningSent = true;
+                    }
+                })), backupInterval, backupInterval);
         }
 
         this.backup = backup;
@@ -157,13 +158,20 @@ public class ReportsManager extends ZLibComponent
 
     public Stream<Report> getTrackedReportsFor(final OfflinePlayer player)
     {
+        return getTrackedReportsFor(player, false);
+    }
+
+    public Stream<Report> getTrackedReportsFor(final OfflinePlayer player, boolean includeReportsWerePlayerIsNotTracked)
+    {
         return reports.stream()
                 .filter(Report::isAutoTracked)
-                .filter(report -> report.isTracked(player));
+                .filter(report -> includeReportsWerePlayerIsNotTracked || report.isTracked(player));
     }
 
     public void backup(final Report report, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
     {
+        report.getPlayers().forEach(ReportPlayer::collectStatistics);
+
         ReportsWorker.save(
                 report,
                 new File(saveDirectory, "backup/" + dateSlug(report.getStartDate()) + "-" + slug(report.getTitle()) + "-backup-" + dateSlug(System.currentTimeMillis()) + ".json"),
@@ -173,6 +181,8 @@ public class ReportsManager extends ZLibComponent
 
     public void save(final Report report, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
     {
+        report.getPlayers().forEach(ReportPlayer::collectStatistics);
+
         ReportsWorker.save(
                 report,
                 new File(saveDirectory, dateSlug(report.getStartDate()) + "-" + slug(report.getTitle()) + ".json"),
@@ -182,6 +192,8 @@ public class ReportsManager extends ZLibComponent
 
     public void publish(final Report report, final Callback<File> callbackSuccess, final Callback<String> callbackError)
     {
+        report.getPlayers().forEach(ReportPlayer::collectStatistics);
+
         // TODO
     }
 

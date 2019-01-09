@@ -35,6 +35,7 @@ package me.cassayre.florian.damageslogger.commands;
 
 import fr.zcraft.zlib.components.commands.*;
 import fr.zcraft.zlib.components.i18n.I;
+import fr.zcraft.zlib.core.ZLib;
 import fr.zcraft.zlib.tools.PluginLogger;
 import me.cassayre.florian.damageslogger.DamagesLogger;
 import me.cassayre.florian.damageslogger.report.Report;
@@ -54,7 +55,7 @@ public class StopCommand extends Command
 
         if (report == null)
         {
-            error(I.t("There is no running recorder. Use {} to start recording a new report.", Commands.getCommandInfo(StartCommand.class).build()));
+            error(I.t("There is no running recorder. Use {0} to start recording a new report.", Commands.getCommandInfo(StartCommand.class).build()));
             return;
         }
 
@@ -63,7 +64,7 @@ public class StopCommand extends Command
         DamagesLogger.get().getManager().save(report, file ->
         {
             sender.sendMessage(I.t("{green}The report was successively stopped and saved."));
-            sender.sendMessage(I.t("{gray}Saved to {0}", file.getAbsolutePath()));
+            sender.sendMessage(I.t("{gray}Saved to {0}", file.getAbsolutePath().replace(ZLib.getPlugin().getDataFolder().getAbsolutePath(), "")));
             DamagesLogger.get().setReport(null);
         }, error ->
         {

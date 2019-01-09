@@ -84,7 +84,7 @@ public class ReportEvent
 
         final JsonObject jsonIcon = new JsonObject();
 
-        jsonIcon.addProperty("type", icon.name());
+        jsonIcon.addProperty("type", icon.name().toLowerCase());
         jsonIcon.addProperty(icon.attributeKey, iconAttribute);
 
         json.add("icon", jsonIcon);

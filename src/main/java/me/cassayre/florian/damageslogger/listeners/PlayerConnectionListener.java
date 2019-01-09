@@ -2,6 +2,7 @@ package me.cassayre.florian.damageslogger.listeners;
 
 import me.cassayre.florian.damageslogger.ReportsManager;
 import me.cassayre.florian.damageslogger.report.Report;
+import me.cassayre.florian.damageslogger.report.ReportPlayer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -20,9 +21,15 @@ public class PlayerConnectionListener implements Listener
     @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerJoin(PlayerJoinEvent e)
     {
-        manager.getTrackedReportsFor(e.getPlayer())
+        manager.getTrackedReportsFor(e.getPlayer(), true)
                 .filter(Report::isAutoTrackingNewPlayers)
                 .forEach(report -> report.registerPlayers(e.getPlayer()));
+
+        manager.getTrackedReportsFor(e.getPlayer())
+                .filter(Report::isAutoCollectingPreviousStatistics)
+                .flatMap(report -> report.getPlayers().stream())
+                .filter(player -> !player.hasPreviousStatistics())
+                .forEach(ReportPlayer::collectPreviousStatistics);
     }
 
     @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)

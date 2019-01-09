@@ -39,6 +39,8 @@ import me.cassayre.florian.damageslogger.DamagesLogger;
 import me.cassayre.florian.damageslogger.report.Report;
 import org.bukkit.ChatColor;
 
+import java.util.List;
+
 @CommandInfo (name = "start", usageParameters = "[record title] [--track-new-players] [--stop-track-on-death] [--stop-track-on-disconnection]")
 @WithFlags ({"track-new-players", "stop-track-on-death", "stop-track-on-disconnection"})
 public class StartCommand extends Command
@@ -48,10 +50,12 @@ public class StartCommand extends Command
     {
         if (DamagesLogger.get().getReport() != null)
         {
-            error(I.t("DamagesLogger is still recording. Use \"{}\" to stop the recording.", Commands.getCommandInfo(StopCommand.class).build()));
+            error(I.t("DamagesLogger is still recording. Use \"{0}\" to stop the recording.", Commands.getCommandInfo(StopCommand.class).build()));
         }
 
         final String title = String.join(" ", args).trim();
+
+        info("Auto track: " + hasFlag("track-new-players"));
 
         DamagesLogger.get().setReport(new Report()
                 .title(title.isEmpty() ? "Minecraft Report" : ChatColor.translateAlternateColorCodes('&', title))
@@ -64,5 +68,12 @@ public class StartCommand extends Command
         );
 
         success(I.t("Recording has been started."));
+    }
+
+    @Override
+    protected List<String> complete()
+    {
+        if (args.length > 0) return getMatchingSubset(args[args.length - 1], "--track-new-players", "--stop-track-on-death", "--stop-track-on-disconnection");
+        else return null;
     }
 }
