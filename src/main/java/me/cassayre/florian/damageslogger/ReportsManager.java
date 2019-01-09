@@ -44,6 +44,8 @@ import me.cassayre.florian.damageslogger.listeners.PlayerDamagesListener;
 import me.cassayre.florian.damageslogger.listeners.PlayerHealsListener;
 import me.cassayre.florian.damageslogger.report.Report;
 import me.cassayre.florian.damageslogger.report.ReportPlayer;
+import me.cassayre.florian.damageslogger.report.record.DamageRecord.DamageType;
+import me.cassayre.florian.damageslogger.report.record.DamageRecord.Weapon;
 import me.cassayre.florian.damageslogger.report.record.HealRecord.HealingType;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -89,11 +91,15 @@ public class ReportsManager extends ZLibComponent
 
     private File saveDirectory = new File(ZLib.getPlugin().getDataFolder(), "reports");
 
-    /**
+    /*
      * As Bukkit does not expose the real heal cause (e.g. “golden apple”) in the regen event,
      * we need to keep track of it if auto-track is enabled.
+     * Same idea for damages sources to identify witches, withers…
      */
     private Map<UUID, HealingType> lastHealingType = new HashMap<>();
+    private Map<UUID, DamageType> lastDamageType = new HashMap<>();
+    private Map<UUID, Player> lastMagicDamager = new HashMap<>();
+    private Map<UUID, Weapon> lastWeapon = new HashMap<>();
 
 
     @Override
@@ -219,6 +225,75 @@ public class ReportsManager extends ZLibComponent
     public HealingType _getLastHealingType(final Player player)
     {
         return lastHealingType.getOrDefault(player.getUniqueId(), HealingType.UNKNOWN);
+    }
+
+    /**
+     * Saves the last damage type for the given player. Internal use but must be public.
+     *
+     * @param player The player.
+     * @param damageType The damage type.
+     */
+    public void _setLastDamageType(final Player player, final DamageType damageType)
+    {
+        lastDamageType.put(player.getUniqueId(), damageType);
+    }
+
+    /**
+     * Retrieves the last damage type for the given player. Internal use but must be public.
+     *
+     * @param player The player.
+     * @return The latest recorded damage type with {@link #_setLastDamageType(Player, DamageType)},
+     * or {@link DamageType#UNKNOWN} if nothing recorded.
+     */
+    public DamageType _getLastDamageType(final Player player)
+    {
+        return lastDamageType.getOrDefault(player.getUniqueId(), DamageType.UNKNOWN);
+    }
+
+    /**
+     * Saves the last magic damage type for the given player. Internal use but must be public.
+     *
+     * @param player The player.
+     * @param damager The damager.
+     */
+    public void _setLastMagicDamager(final Player player, final Player damager)
+    {
+        lastMagicDamager.put(player.getUniqueId(), damager);
+    }
+
+    /**
+     * Retrieves the last magic damage type for the given player. Internal use but must be public.
+     *
+     * @param player The player.
+     * @return The latest recorded damage type with {@link #_setLastMagicDamager(Player, Player)},
+     * or {@link DamageType#UNKNOWN} if nothing recorded.
+     */
+    public Player _getLastMagicDamager(final Player player)
+    {
+        return lastMagicDamager.get(player.getUniqueId());
+    }
+
+    /**
+     * Saves the last magic damage type for the given player. Internal use but must be public.
+     *
+     * @param player The player.
+     * @param weapon The weapon.
+     */
+    public void _setLastWeapon(final Player player, final Weapon weapon)
+    {
+        lastWeapon.put(player.getUniqueId(), weapon);
+    }
+
+    /**
+     * Retrieves the last magic damage type for the given player. Internal use but must be public.
+     *
+     * @param player The player.
+     * @return The latest recorded damage type with {@link #_setLastMagicDamager(Player, Player)},
+     * or {@link DamageType#UNKNOWN} if nothing recorded.
+     */
+    public Weapon _getLastWeapon(final Player player)
+    {
+        return lastWeapon.getOrDefault(player.getUniqueId(), Weapon.UNKNOWN);
     }
 
 

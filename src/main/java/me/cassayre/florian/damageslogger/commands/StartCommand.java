@@ -55,8 +55,6 @@ public class StartCommand extends Command
 
         final String title = String.join(" ", args).trim();
 
-        info("Auto track: " + hasFlag("track-new-players"));
-
         DamagesLogger.get().setReport(new Report()
                 .title(title.isEmpty() ? "Minecraft Report" : ChatColor.translateAlternateColorCodes('&', title))
                 .registerOnlinePlayers()

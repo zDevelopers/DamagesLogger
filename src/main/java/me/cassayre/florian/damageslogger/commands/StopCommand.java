@@ -41,6 +41,7 @@ import me.cassayre.florian.damageslogger.DamagesLogger;
 import me.cassayre.florian.damageslogger.report.Report;
 import org.bukkit.command.CommandSender;
 
+import java.io.File;
 import java.util.List;
 
 @CommandInfo (name = "stop", usageParameters = "[--no-publish]")
@@ -64,7 +65,7 @@ public class StopCommand extends Command
         DamagesLogger.get().getManager().save(report, file ->
         {
             sender.sendMessage(I.t("{green}The report was successively stopped and saved."));
-            sender.sendMessage(I.t("{gray}Saved to {0}", file.getAbsolutePath().replace(ZLib.getPlugin().getDataFolder().getAbsolutePath(), "")));
+            sender.sendMessage(I.t("{gray}Saved to {0}", file.getAbsolutePath().replace(ZLib.getPlugin().getDataFolder().getAbsolutePath() + File.separator, "")));
             DamagesLogger.get().setReport(null);
         }, error ->
         {

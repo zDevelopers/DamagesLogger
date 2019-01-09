@@ -21,9 +21,21 @@ public class PlayerDamagesListener implements Listener
 {
     private final ReportsManager manager;
 
+    private Class<?> TIPPED_ARROW_CLASS;
+
     public PlayerDamagesListener(ReportsManager manager)
     {
         this.manager = manager;
+
+        // Tipped arrows were not available in Minecraft 1.8
+        try
+        {
+            TIPPED_ARROW_CLASS = Class.forName("org.bukkit.entity.TippedArrow");
+        }
+        catch (ClassNotFoundException e)
+        {
+            TIPPED_ARROW_CLASS = null;
+        }
     }
 
     @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -53,14 +65,14 @@ public class PlayerDamagesListener implements Listener
 
         final boolean isLethal = player.getHealth() - damages <= 0;
 
-        final DamageType damageType = getDamageType(ev);
-        final Weapon weapon = ev instanceof EntityDamageByEntityEvent ? getWeapon(((EntityDamageByEntityEvent) ev)) : null;
+        final DamageType damageType = getDamageType(ev, player);
+        final Weapon weapon = getWeapon(ev, player);
 
         final DamageRecord record;
 
         if (damageType == DamageType.PLAYER)
         {
-            record = new DamageRecord(player, damages, weapon, getPlayerDamager((ev)), isLethal);
+            record = new DamageRecord(player, damages, weapon, getPlayerDamager(ev, player), isLethal);
         }
         else
         {
@@ -68,9 +80,12 @@ public class PlayerDamagesListener implements Listener
         }
 
         manager.getTrackedReportsFor(player).forEach(report -> report.record(record));
+
+        manager._setLastDamageType(player, damageType);
+        manager._setLastWeapon(player, weapon);
     }
 
-    private DamageType getDamageType(final EntityDamageEvent ev)
+    private DamageType getDamageType(final EntityDamageEvent ev, final Player damaged)
     {
         if (ev instanceof EntityDamageByEntityEvent)
         {
@@ -223,9 +238,9 @@ public class PlayerDamagesListener implements Listener
                 case FALL:
                     return DamageType.FALL;
 
+                // Separate FALLING_BLOCK?
                 case SUFFOCATION:
                 case FALLING_BLOCK:
-                    // Separate FALLING_BLOCK?
                     return DamageType.SUFFOCATION;
 
                 case DROWNING:
@@ -235,12 +250,42 @@ public class PlayerDamagesListener implements Listener
                     return DamageType.STARVATION;
 
                 case WITHER:
-                    // TODO Check for latest damage (either Wither or Wither Skeleton)
-                    return DamageType.WITHER_SKELETON;
+                    switch (manager._getLastDamageType(damaged))
+                    {
+                        // Who knows, if players are given wither potions?
+                        case PLAYER:
+                            return DamageType.PLAYER;
+
+                        case WITHER:
+                            return DamageType.WITHER;
+
+                        case WITHER_SKELETON:
+                        default:
+                            return DamageType.WITHER_SKELETON;
+                    }
 
                 case POISON:
-                    // FIXME Check for latest magic damage (either Player, Witch, Wither or Wither Skeleton)
-                    return DamageType.UNKNOWN;
+                    switch (manager._getLastDamageType(damaged))
+                    {
+                        case PLAYER:
+                            return DamageType.PLAYER;
+
+                        case CAVE_SPIDER:
+                            return DamageType.CAVE_SPIDER;
+
+                        case WITCH:
+                            return DamageType.WITCH;
+
+                        case WITHER:
+                            return DamageType.WITHER;
+
+                        case WITHER_SKELETON:
+                            return DamageType.WITHER_SKELETON;
+
+                        default:
+                            // TODO add 1.13+ fishes
+                            return DamageType.UNKNOWN;
+                    }
 
                 default:
                     // Enum value not available in Minecraft 1.8
@@ -254,92 +299,128 @@ public class PlayerDamagesListener implements Listener
         return DamageType.UNKNOWN;
     }
 
-    private Player getPlayerDamager(final EntityDamageEvent ev)
+    private Player getPlayerDamager(final EntityDamageEvent ev, final Player damaged)
     {
-        // FIXME will not always be true for poison
-        if (!(ev instanceof EntityDamageByEntityEvent)) return null;
-
-        final Entity damager = ((EntityDamageByEntityEvent) ev).getDamager();
-
-        if (damager instanceof Player)
+        if (ev instanceof EntityDamageByEntityEvent)
         {
-            return (Player) damager;
-        }
+            final Entity damager = ((EntityDamageByEntityEvent) ev).getDamager();
 
-        else if (damager instanceof Arrow)
-        {
-            if (((Arrow) damager).getShooter() instanceof Player)
+            if (damager instanceof Player)
             {
-                return (Player) ((Arrow) damager).getShooter();
+                return (Player) damager;
             }
+
+            else if (damager instanceof Arrow)
+            {
+                if (((Arrow) damager).getShooter() instanceof Player)
+                {
+                    if (TIPPED_ARROW_CLASS != null && TIPPED_ARROW_CLASS.isAssignableFrom(damager.getClass()))
+                    {
+                        manager._setLastMagicDamager(damaged, (Player) ((Arrow) damager).getShooter());
+                    }
+
+                    return (Player) ((Arrow) damager).getShooter();
+                }
+                else return null;
+            }
+
+            else if (damager instanceof ThrownPotion)
+            {
+                if (((ThrownPotion) damager).getShooter() instanceof Player)
+                {
+                    manager._setLastMagicDamager(damaged, (Player) ((ThrownPotion) damager).getShooter());
+                    return (Player) ((ThrownPotion) damager).getShooter();
+                }
+                else return null;
+            }
+
             else return null;
         }
 
-        else if (damager instanceof ThrownPotion)
+        else if (ev.getCause() == DamageCause.POISON && manager._getLastDamageType(damaged) == DamageType.PLAYER)
         {
-            if (((ThrownPotion) damager).getShooter() instanceof Player)
-            {
-                return (Player) ((ThrownPotion) damager).getShooter();
-            }
-            else return null;
+            return manager._getLastMagicDamager(damaged);
         }
-
-        // FIXME check for latest magic damage in case it's from a player
 
         else return null;
     }
 
-    private Weapon getWeapon(final EntityDamageByEntityEvent ev)
+    private Weapon getWeapon(final EntityDamageEvent ev, final Player damaged)
     {
         final ItemStack weapon;
 
-        if (ev.getDamager() instanceof Arrow)
+        if (ev instanceof EntityDamageByEntityEvent)
         {
-            if (((Arrow) ev.getDamager()).getShooter() instanceof LivingEntity)
+            final Entity damager = ((EntityDamageByEntityEvent) ev).getDamager();
+
+            if (damager instanceof Arrow)
             {
-                return Weapon.BOW;
+                if (((Arrow) damager).getShooter() instanceof LivingEntity)
+                {
+                    weapon = ((LivingEntity) ((Arrow) damager).getShooter()).getEquipment().getItemInHand();
+                }
+                else
+                {
+                    return Weapon.UNKNOWN;
+                }
+            }
+            else if (damager instanceof LivingEntity)
+            {
+                weapon = ((LivingEntity) damager).getEquipment().getItemInHand();
+            }
+            else if (damager instanceof ThrownPotion)
+            {
+                return Weapon.MAGIC;
             }
             else
             {
                 return Weapon.UNKNOWN;
             }
         }
-        else if (ev.getDamager() instanceof LivingEntity)
-        {
-            weapon = ((LivingEntity) ev.getDamager()).getEquipment().getItemInHand();
-        }
-        else if (ev.getDamager() instanceof ThrownPotion)
-        {
-            return Weapon.MAGIC;
-        }
         else
         {
-            return Weapon.UNKNOWN;
-        }
-
-        if (ev.getCause() == DamageCause.ENTITY_ATTACK || ev.getCause().name().equals("ENTITY_SWEEP_ATTACK"))
-        {
-            switch(weapon.getType())
+            if (ev.getCause() == DamageCause.MAGIC || ev.getCause() == DamageCause.POISON)
             {
-                case WOOD_SWORD: return Weapon.SWORD_WOOD;
-                case GOLD_SWORD: return Weapon.SWORD_GOLD;
-                case STONE_SWORD: return Weapon.SWORD_STONE;
-                case IRON_SWORD: return Weapon.SWORD_IRON;
-                case DIAMOND_SWORD: return Weapon.SWORD_DIAMOND;
-                case WOOD_AXE: return Weapon.AXE_WOOD;
-                case GOLD_AXE: return Weapon.AXE_GOLD;
-                case STONE_AXE: return Weapon.AXE_STONE;
-                case IRON_AXE: return Weapon.AXE_IRON;
-                case DIAMOND_AXE: return Weapon.AXE_DIAMOND;
-                default: return Weapon.FISTS;
+                switch (manager._getLastWeapon(damaged))
+                {
+                    case BOW:
+                        return Weapon.BOW;
+
+                    case MAGIC:
+                    default:
+                        return Weapon.MAGIC;
+                }
             }
+
+            // Wither Skeleton
+            // FIXME Magic Value: a Wither Skeleton could use something else than a stone sword in some special cases.
+            else if (ev.getCause() == DamageCause.WITHER && manager._getLastWeapon(damaged) == Weapon.SWORD_STONE)
+            {
+                return Weapon.SWORD_STONE;
+            }
+
+            else return Weapon.UNKNOWN;
         }
 
-        else if (ev.getCause() == DamageCause.THORNS)
+        if (ev.getCause() == DamageCause.THORNS)
         {
             return Weapon.THORNS;
         }
 
-        else return Weapon.UNKNOWN;
+        switch (weapon.getType())
+        {
+            case WOOD_SWORD: return Weapon.SWORD_WOOD;
+            case GOLD_SWORD: return Weapon.SWORD_GOLD;
+            case STONE_SWORD: return Weapon.SWORD_STONE;
+            case IRON_SWORD: return Weapon.SWORD_IRON;
+            case DIAMOND_SWORD: return Weapon.SWORD_DIAMOND;
+            case WOOD_AXE: return Weapon.AXE_WOOD;
+            case GOLD_AXE: return Weapon.AXE_GOLD;
+            case STONE_AXE: return Weapon.AXE_STONE;
+            case IRON_AXE: return Weapon.AXE_IRON;
+            case DIAMOND_AXE: return Weapon.AXE_DIAMOND;
+            case BOW: return Weapon.BOW;
+            default: return Weapon.FISTS;
+        }
     }
 }
