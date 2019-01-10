@@ -45,6 +45,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 
 /**
@@ -131,6 +132,13 @@ public class Report
      * The teams considered in this report. May be empty or not containing all player.
      */
     private Set<ReportTeam> teams = new HashSet<>();
+
+    /**
+     * The winners, if provided manually. If not provided (empty), and enabled in the settings,
+     * they will be calculated automatically, based on who is still alive, considering a game with
+     * one life.
+     */
+    private Set<UUID> winners = new HashSet<>();
 
     /**
      * The recorded history of damages per player.
@@ -412,6 +420,84 @@ public class Report
         return this;
     }
 
+    /**
+     * Explicitly sets the winners of the game.
+     *
+     * If not set and enabled in the settings, winners will be calculated
+     * automatically based on who is still alive. This calculation assumes
+     * players only have one life. If it's not the case, you should specify
+     * explicitly the winners.
+     *
+     * @param winnersUUIDs The winners' UUID.
+     * @return Current instance, for method chaining.
+     */
+    public Report setWinners(final UUID... winnersUUIDs)
+    {
+        winners.addAll(Arrays.asList(winnersUUIDs));
+        return this;
+    }
+
+    /**
+     * Explicitly sets the winners of the game.
+     *
+     * If not set and enabled in the settings, winners will be calculated
+     * automatically based on who is still alive. This calculation assumes
+     * players only have one life. If it's not the case, you should specify
+     * explicitly the winners.
+     *
+     * @param winners The winners.
+     * @return Current instance, for method chaining.
+     */
+    public Report setWinners(final OfflinePlayer... winners)
+    {
+        this.winners.addAll(Arrays.stream(winners).map(OfflinePlayer::getUniqueId).collect(Collectors.toSet()));
+        return this;
+    }
+
+    /**
+     * Explicitly sets the winners of the game.
+     *
+     * If not set and enabled in the settings, winners will be calculated
+     * automatically based on who is still alive. This calculation assumes
+     * players only have one life. If it's not the case, you should specify
+     * explicitly the winners.
+     *
+     * @param winnersUUIDs The winners' UUID.
+     * @return Current instance, for method chaining.
+     */
+    public Report setWinnersUUIDs(final Iterable<UUID> winnersUUIDs)
+    {
+        winnersUUIDs.forEach(winners::add);
+        return this;
+    }
+
+    /**
+     * Explicitly sets the winners of the game.
+     *
+     * If not set and enabled in the settings, winners will be calculated
+     * automatically based on who is still alive. This calculation assumes
+     * players only have one life. If it's not the case, you should specify
+     * explicitly the winners.
+     *
+     * @param winners The winners.
+     * @return Current instance, for method chaining.
+     */
+    public Report setWinners(final Iterable<OfflinePlayer> winners)
+    {
+        StreamSupport.stream(winners.spliterator(), false).map(OfflinePlayer::getUniqueId).forEach(this.winners::add);
+        return this;
+    }
+
+    /**
+     * Removes any registered winner to back-up to the automated calculation.
+     *
+     * @return Current instance, for method chaining.
+     */
+    public Report resetWinners()
+    {
+        winners.clear();
+        return this;
+    }
 
     /**
      * Records a damage. The damage will be merged if there is a similar damage recorded just before.
@@ -617,6 +703,9 @@ public class Report
         final JsonArray teams = new JsonArray();
         this.teams.forEach(reportTeam -> teams.add(reportTeam.toJSON()));
 
+        final JsonArray winners = new JsonArray();
+        this.winners.forEach(uuid -> winners.add(uuid.toString()));
+
         final JsonArray damages = new JsonArray();
         this.damages.values().stream().flatMap(Collection::stream).forEach(damage -> damages.add(damage.toJSON()));
 
@@ -628,6 +717,7 @@ public class Report
 
         json.add("players", players);
         json.add("teams", teams);
+        json.add("winners", winners);
         json.add("damages", damages);
         json.add("heals", heals);
         json.add("events", events);
