@@ -7,6 +7,7 @@ import me.cassayre.florian.damageslogger.report.ReportEvent;
 import me.cassayre.florian.damageslogger.report.record.DamageRecord;
 import me.cassayre.florian.damageslogger.report.record.DamageRecord.DamageType;
 import me.cassayre.florian.damageslogger.report.record.DamageRecord.Weapon;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,6 +17,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.Map;
 
 public class PlayerDamagesListener implements Listener
 {
@@ -66,23 +69,23 @@ public class PlayerDamagesListener implements Listener
         final boolean isLethal = player.getHealth() - damages <= 0;
 
         final DamageType damageType = getDamageType(ev, player);
-        final Weapon weapon = getWeapon(ev, player);
+        final WeaponWithEnchantments weapon = getWeapon(ev, player);
 
         final DamageRecord record;
 
         if (damageType == DamageType.PLAYER)
         {
-            record = new DamageRecord(player, damages, weapon, getPlayerDamager(ev, player), isLethal);
+            record = new DamageRecord(player, damages, weapon.weapon, weapon.enchantments, getPlayerDamager(ev, player), isLethal);
         }
         else
         {
-            record = new DamageRecord(player, damages, weapon, damageType, isLethal);
+            record = new DamageRecord(player, damages, weapon.weapon, weapon.enchantments, damageType, isLethal);
         }
 
         manager.getTrackedReportsFor(player).forEach(report -> report.record(record));
 
         manager._setLastDamageType(player, damageType);
-        manager._setLastWeapon(player, weapon);
+        manager._setLastWeapon(player, weapon.weapon);
     }
 
     private DamageType getDamageType(final EntityDamageEvent ev, final Player damaged)
@@ -345,7 +348,7 @@ public class PlayerDamagesListener implements Listener
         else return null;
     }
 
-    private Weapon getWeapon(final EntityDamageEvent ev, final Player damaged)
+    private WeaponWithEnchantments getWeapon(final EntityDamageEvent ev, final Player damaged)
     {
         final ItemStack weapon;
 
@@ -361,7 +364,7 @@ public class PlayerDamagesListener implements Listener
                 }
                 else
                 {
-                    return Weapon.UNKNOWN;
+                    return new WeaponWithEnchantments(Weapon.UNKNOWN);
                 }
             }
             else if (damager instanceof LivingEntity)
@@ -370,11 +373,11 @@ public class PlayerDamagesListener implements Listener
             }
             else if (damager instanceof ThrownPotion)
             {
-                return Weapon.MAGIC;
+                return new WeaponWithEnchantments(Weapon.MAGIC);
             }
             else
             {
-                return Weapon.UNKNOWN;
+                return new WeaponWithEnchantments(Weapon.UNKNOWN);
             }
         }
         else
@@ -384,11 +387,14 @@ public class PlayerDamagesListener implements Listener
                 switch (manager._getLastWeapon(damaged))
                 {
                     case BOW:
-                        return Weapon.BOW;
+                        // If it's the same, we don't care about returning enchantments,
+                        // as the damage will be merged with the previous one, containing
+                        // them.
+                        return new WeaponWithEnchantments(Weapon.BOW);
 
                     case MAGIC:
                     default:
-                        return Weapon.MAGIC;
+                        return new WeaponWithEnchantments(Weapon.MAGIC);
                 }
             }
 
@@ -396,31 +402,49 @@ public class PlayerDamagesListener implements Listener
             // FIXME Magic Value: a Wither Skeleton could use something else than a stone sword in some special cases.
             else if (ev.getCause() == DamageCause.WITHER && manager._getLastWeapon(damaged) == Weapon.SWORD_STONE)
             {
-                return Weapon.SWORD_STONE;
+                return new WeaponWithEnchantments(Weapon.SWORD_STONE);
             }
 
-            else return Weapon.UNKNOWN;
+            else return new WeaponWithEnchantments(Weapon.UNKNOWN);
         }
 
         if (ev.getCause() == DamageCause.THORNS)
         {
-            return Weapon.THORNS;
+            return new WeaponWithEnchantments(Weapon.THORNS);
         }
 
         switch (weapon.getType())
         {
-            case WOOD_SWORD: return Weapon.SWORD_WOOD;
-            case GOLD_SWORD: return Weapon.SWORD_GOLD;
-            case STONE_SWORD: return Weapon.SWORD_STONE;
-            case IRON_SWORD: return Weapon.SWORD_IRON;
-            case DIAMOND_SWORD: return Weapon.SWORD_DIAMOND;
-            case WOOD_AXE: return Weapon.AXE_WOOD;
-            case GOLD_AXE: return Weapon.AXE_GOLD;
-            case STONE_AXE: return Weapon.AXE_STONE;
-            case IRON_AXE: return Weapon.AXE_IRON;
-            case DIAMOND_AXE: return Weapon.AXE_DIAMOND;
-            case BOW: return Weapon.BOW;
-            default: return Weapon.FISTS;
+            case WOOD_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_WOOD, weapon.getEnchantments());
+            case GOLD_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_GOLD, weapon.getEnchantments());
+            case STONE_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_STONE, weapon.getEnchantments());
+            case IRON_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_IRON, weapon.getEnchantments());
+            case DIAMOND_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_DIAMOND, weapon.getEnchantments());
+            case WOOD_AXE: return new WeaponWithEnchantments(Weapon.AXE_WOOD, weapon.getEnchantments());
+            case GOLD_AXE: return new WeaponWithEnchantments(Weapon.AXE_GOLD, weapon.getEnchantments());
+            case STONE_AXE: return new WeaponWithEnchantments(Weapon.AXE_STONE, weapon.getEnchantments());
+            case IRON_AXE: return new WeaponWithEnchantments(Weapon.AXE_IRON, weapon.getEnchantments());
+            case DIAMOND_AXE: return new WeaponWithEnchantments(Weapon.AXE_DIAMOND, weapon.getEnchantments());
+            case BOW: return new WeaponWithEnchantments(Weapon.BOW, weapon.getEnchantments());
+            default: return new WeaponWithEnchantments(Weapon.FISTS);
+        }
+    }
+
+    private class WeaponWithEnchantments
+    {
+        private final Weapon weapon;
+        private final Map<Enchantment, Integer> enchantments;
+
+        private WeaponWithEnchantments(Weapon weapon, Map<Enchantment, Integer> enchantments)
+        {
+            this.weapon = weapon;
+            this.enchantments = enchantments;
+        }
+
+        private WeaponWithEnchantments(Weapon weapon)
+        {
+            this.weapon = weapon;
+            this.enchantments = null;
         }
     }
 }

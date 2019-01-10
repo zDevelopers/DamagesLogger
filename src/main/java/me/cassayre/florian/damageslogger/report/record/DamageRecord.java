@@ -1,17 +1,23 @@
 package me.cassayre.florian.damageslogger.report.record;
 
 import com.google.gson.JsonObject;
+import me.cassayre.florian.damageslogger.ReportsUtils;
 import me.cassayre.florian.damageslogger.report.record.core.LifeChangeRecord;
 import org.apache.commons.lang.Validate;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class DamageRecord extends LifeChangeRecord
 {
     private final DamageType damageType;
     private final Weapon weapon;
+    private final Map<Enchantment, Integer> weaponEnchantments;
     private final OfflinePlayer damager;
 
     public DamageRecord(Player player, double points, Weapon weapon, Player damager)
@@ -21,18 +27,30 @@ public class DamageRecord extends LifeChangeRecord
 
     public DamageRecord(Player player, double points, Weapon weapon, Player damager, boolean isLethal)
     {
+        this(player, points, weapon, null, damager, isLethal);
+    }
+
+    public DamageRecord(Player player, double points, Weapon weapon, Map<Enchantment, Integer> weaponEnchantments, Player damager, boolean isLethal)
+    {
         super(player, points, isLethal);
 
         this.weapon = weapon;
+        this.weaponEnchantments = weaponEnchantments != null ? new HashMap<>(weaponEnchantments) : Collections.emptyMap();
         this.damager = damager;
         this.damageType = DamageType.PLAYER;
     }
 
     public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, Player damager, boolean isLethal)
     {
+        this(player, startDate, endDate, points, weapon, null, damager, isLethal);
+    }
+
+    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, Map<Enchantment, Integer> weaponEnchantments, Player damager, boolean isLethal)
+    {
         super(player, startDate, endDate, points, isLethal);
 
         this.weapon = weapon;
+        this.weaponEnchantments = weaponEnchantments != null ? new HashMap<>(weaponEnchantments) : Collections.emptyMap();
         this.damager = damager;
         this.damageType = DamageType.PLAYER;
     }
@@ -44,22 +62,34 @@ public class DamageRecord extends LifeChangeRecord
 
     public DamageRecord(Player player, double points, Weapon weapon, DamageType damageType, boolean isLethal)
     {
+        this(player, points, weapon, null, damageType, isLethal);
+    }
+
+    public DamageRecord(Player player, double points, Weapon weapon, Map<Enchantment, Integer> weaponEnchantments, DamageType damageType, boolean isLethal)
+    {
         super(player, points, isLethal);
 
         Validate.isTrue(damageType != DamageType.PLAYER, "To create a player damage, use the constructors accepting a Player argument.");
 
         this.weapon = weapon;
+        this.weaponEnchantments = weaponEnchantments != null ? new HashMap<>(weaponEnchantments) : Collections.emptyMap();
         this.damager = null;
         this.damageType = damageType;
     }
 
     public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, DamageType damageType, boolean isLethal)
     {
+        this(player, startDate, endDate, points, weapon, null, damageType, isLethal);
+    }
+
+    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, Map<Enchantment, Integer> weaponEnchantments, DamageType damageType, boolean isLethal)
+    {
         super(player, startDate, endDate, points, isLethal);
 
         Validate.isTrue(damageType != DamageType.PLAYER, "To create a player damage, use the constructors accepting a Player argument.");
 
         this.weapon = weapon;
+        this.weaponEnchantments = weaponEnchantments != null ? new HashMap<>(weaponEnchantments) : Collections.emptyMap();
         this.damager = null;
         this.damageType = damageType;
     }
@@ -89,10 +119,18 @@ public class DamageRecord extends LifeChangeRecord
     @Override
     public JsonObject toJSON()
     {
-        JsonObject json = super.toJSON();
+        final JsonObject json = super.toJSON();
 
         json.addProperty("cause", damageType.name());
         json.addProperty("weapon", weapon != null ? weapon.name() : null);
+
+        if (!weaponEnchantments.isEmpty())
+        {
+            final JsonObject enchantments = new JsonObject();
+            weaponEnchantments.forEach((enchantment, level) -> enchantments.addProperty(ReportsUtils.getEnchantmentID(enchantment), level));
+
+            json.add("weapon_enchantments", enchantments);
+        }
 
         if (damager != null) json.addProperty("damager", damager.getUniqueId().toString());
         json.addProperty("damagee", player.getUniqueId().toString());
@@ -121,6 +159,7 @@ public class DamageRecord extends LifeChangeRecord
     {
         return "DamageRecord{" + "damageType=" + damageType +
                 ", weapon=" + weapon +
+                ", weaponEnchantments=" + weaponEnchantments +
                 ", damager=" + damager +
                 ", points=" + points +
                 ", isLethal=" + isLethal +

@@ -33,10 +33,72 @@
  */
 package me.cassayre.florian.damageslogger;
 
+import com.google.common.collect.ImmutableMap;
 import org.bukkit.Statistic;
+import org.bukkit.enchantments.Enchantment;
+
+import java.util.Map;
 
 public final class ReportsUtils
 {
+    private static final Map<String, String> ENCHANTS_BUKKIT_TO_MINECRAFT;
+
+    static {
+        ENCHANTS_BUKKIT_TO_MINECRAFT = ImmutableMap.<String, String>builder()
+
+                // 1.8 and before
+                .put("PROTECTION_ENVIRONMENTAL", "protection")
+                .put("PROTECTION_FIRE", "fire_protection")
+                .put("PROTECTION_FALL", "feather_falling")
+                .put("PROTECTION_EXPLOSIONS", "blast_protection")
+                .put("PROTECTION_PROJECTILE", "projectile_protection")
+                .put("THORNS", "thorns")
+                .put("OXYGEN", "respiration")
+                .put("DEPTH_STRIDER", "depth_strider")
+                .put("WATER_WORKER", "aqua_affinity")
+                .put("DAMAGE_ALL", "sharpness")
+                .put("DAMAGE_UNDEAD", "smite")
+                .put("DAMAGE_ARTHROPODS", "bane_of_arthropods")
+                .put("KNOCKBACK", "knockback")
+                .put("FIRE_ASPECT", "fire_aspect")
+                .put("LOOT_BONUS_MOBS", "looting")
+                .put("DIG_SPEED", "efficiency")
+                .put("SILK_TOUCH", "silk_touch")
+                .put("DURABILITY", "unbreaking")
+                .put("LOOT_BONUS_BLOCKS", "fortune")
+                .put("ARROW_DAMAGE", "power")
+                .put("ARROW_KNOCKBACK", "punch")
+                .put("ARROW_FIRE", "flame")
+                .put("ARROW_INFINITE", "infinity")
+                .put("LUCK", "luck_of_the_sea")
+                .put("LURE", "lure")
+
+                // 1.9
+                .put("FROST_WALKER", "frost_walker")
+                .put("MENDING", "mending")
+
+                // 1.11
+                .put("BINDING_CURSE", "binding_curse")
+                .put("VANISHING_CURSE", "vanishing_curse")
+
+                // 1.11.1
+                .put("SWEEPING_EDGE", "sweeping")
+
+                // 1.13
+                .put("IMPALING", "impaling")
+                .put("RIPTIDE", "riptide")
+                .put("LOYALTY", "loyalty")
+                .put("CHANNELING", "channeling")
+
+                // 1.14
+                // FIXME Bukkit names are subject to change.
+                .put("MULTISHOT", "multishot")
+                .put("PIERCING", "piercing")
+                .put("QUICK_CHARGE", "quick_charge")
+
+                .build();
+    }
+
     /**
      * Returns the Minecraft 1.13+ ID for the given statistic.
      *
@@ -118,5 +180,16 @@ public final class ReportsUtils
         }
 
         return "minecraft." + name;
+    }
+
+    /**
+     * Returns the Minecraft 1.13+ ID for the given enchant.
+     *
+     * @param enchantment The enchant.
+     * @return The 1.13+ ID.
+     */
+    public static String getEnchantmentID(final Enchantment enchantment)
+    {
+        return ENCHANTS_BUKKIT_TO_MINECRAFT.getOrDefault(enchantment.getName(), enchantment.getName());
     }
 }

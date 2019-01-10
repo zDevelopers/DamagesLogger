@@ -51,7 +51,7 @@ public class HealRecord extends LifeChangeRecord
     @Override
     public JsonObject toJSON()
     {
-        JsonObject json = super.toJSON();
+        final JsonObject json = super.toJSON();
 
         json.addProperty("cause", healingType.name());
         json.addProperty("heal", (int) Math.abs(points));
