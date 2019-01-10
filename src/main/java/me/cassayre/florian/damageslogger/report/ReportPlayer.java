@@ -37,6 +37,7 @@ import com.google.gson.JsonObject;
 import fr.zcraft.zlib.tools.PluginLogger;
 import fr.zcraft.zlib.tools.items.ItemUtils;
 import fr.zcraft.zlib.tools.reflection.NMSException;
+import me.cassayre.florian.damageslogger.ReportsUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -265,61 +266,7 @@ public class ReportPlayer
         final JsonObject statistics = new JsonObject();
 
         final JsonObject statisticsGeneric = new JsonObject();
-        genericStatistics.forEach((statistic, value) -> {
-            final String name;
-
-            // We convert all keys names to 1.13+ IDs.
-            // FIXME Magic values?
-            switch (statistic) {
-                case PLAY_ONE_TICK:
-                    name = "play_one_minute"; break;
-                case CAKE_SLICES_EATEN:
-                    name = "eat_cake_slice"; break;
-                case CAULDRON_FILLED:
-                    name = "fill_cauldron"; break;
-                case CAULDRON_USED:
-                    name = "use_cauldron"; break;
-                case ARMOR_CLEANED:
-                    name = "clean_armor"; break;
-                case BANNER_CLEANED:
-                    name = "clean_banner"; break;
-                case BREWINGSTAND_INTERACTION:
-                    name = "interact_with_brewingstand"; break;
-                case BEACON_INTERACTION:
-                    name = "interact_with_beacon "; break;
-                case DROPPER_INSPECTED:
-                    name = "inspect_dropper"; break;
-                case HOPPER_INSPECTED:
-                    name = "inspect_hopper"; break;
-                case DISPENSER_INSPECTED:
-                    name = "inspect_dispenser"; break;
-                case NOTEBLOCK_PLAYED:
-                    name = "play_noteblock"; break;
-                case NOTEBLOCK_TUNED:
-                    name = "tune_noteblock"; break;
-                case FLOWER_POTTED:
-                    name = "pot_flower"; break;
-                case TRAPPED_CHEST_TRIGGERED:
-                    name = "trigger_trapped_chest"; break;
-                case ENDERCHEST_OPENED:
-                    name = "open_enderchest"; break;
-                case ITEM_ENCHANTED:
-                    name = "enchant_item"; break;
-                case RECORD_PLAYED:
-                    name = "play_record"; break;
-                case FURNACE_INTERACTION:
-                    name = "interact_with_furnace"; break;
-                case CRAFTING_TABLE_INTERACTION:
-                    name = "interact_with_crafting_table"; break;
-                case CHEST_OPENED:
-                    name = "open_chest"; break;
-
-                default:
-                    name = statistic.name().toLowerCase();
-            }
-
-            statisticsGeneric.addProperty("minecraft." + name, value);
-        });
+        genericStatistics.forEach((statistic, value) -> statisticsGeneric.addProperty(ReportsUtils.getStatisticID(statistic), value));
 
         statistics.add("generic", statisticsGeneric);
         statistics.add("used", toJson(usedStatistics));

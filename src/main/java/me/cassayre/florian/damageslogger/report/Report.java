@@ -111,10 +111,10 @@ public class Report
      */
     private boolean addDefaultEvents = true;
 
-    /*
+    /**
      * The settings of this report.
      */
-    // private ReportSettings settings = new ReportSettings();
+    private ReportSettings settings;
 
     /**
      * The players in this report.
@@ -148,6 +148,8 @@ public class Report
     private Set<ReportEvent> events = new HashSet<>();
 
 
+    public Report() { settings = new ReportSettings(this); }
+
     /**
      * Sets the title of the report.
      *
@@ -155,6 +157,19 @@ public class Report
      * @return Current instance, for method chaining.
      */
     public Report title(final String title) { this.title = title; return this; }
+
+    /**
+     * Opens the settings.
+     *
+     * These settings are for the report page configuration. For collect
+     * configuration, use other methods in this class.
+     *
+     * Use {@link ReportSettings#done()} to go back to the report chaining
+     * when done.
+     *
+     * @return The settings.
+     */
+    public ReportSettings settings() { return settings; }
 
     /**
      * Sets the start date of this report. All events/heals/damages/etc. dates will
@@ -594,7 +609,7 @@ public class Report
         json.addProperty("match_uuid", uuid.toString());
         json.addProperty("title", title);
         json.addProperty("date", Instant.ofEpochMilli(startDate).atZone(TimeZone.getDefault().toZoneId()).toOffsetDateTime().toString());
-        // json.add("settings", settings.toJSON());
+        json.add("settings", settings.toJSON());
 
         final JsonArray players = new JsonArray();
         this.players.values().forEach(reportPlayer -> players.add(reportPlayer.toJSON()));
