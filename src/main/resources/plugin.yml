@@ -1,10 +1,10 @@
 name: DamagesLogger
 description: 
 main: me.cassayre.florian.damageslogger.DamagesLogger
-version: 0.1
+version: 1.0
 
 commands:
   damageslogger:
-    description: Damages Logger main command. Enter "/dl ?" for help.
+    description: Damages Logger main command. Enter "/dl help" for help.
     aliases: [dl]
     usage: /dl

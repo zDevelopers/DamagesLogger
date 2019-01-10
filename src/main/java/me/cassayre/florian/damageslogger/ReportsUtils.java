@@ -42,6 +42,7 @@ import java.util.Map;
 public final class ReportsUtils
 {
     private static final Map<String, String> ENCHANTS_BUKKIT_TO_MINECRAFT;
+    private static final Map<Statistic, String> STATISTICS_BUKKIT_TO_MINECRAFT;
 
     static {
         ENCHANTS_BUKKIT_TO_MINECRAFT = ImmutableMap.<String, String>builder()
@@ -97,6 +98,33 @@ public final class ReportsUtils
                 .put("QUICK_CHARGE", "quick_charge")
 
                 .build();
+
+
+        // Statistics for whose the enum name differs from th 1.13+ ID in uppercase.
+        STATISTICS_BUKKIT_TO_MINECRAFT = ImmutableMap.<Statistic, String>builder()
+
+                .put(Statistic.PLAY_ONE_TICK, "play_one_minute")  // Warning: misleading Minecraft name, as it's actually ticks.
+                .put(Statistic.CAKE_SLICES_EATEN, "eat_cake_slice")
+                .put(Statistic.CAULDRON_FILLED, "fill_cauldron")
+                .put(Statistic.CAULDRON_USED, "use_cauldron")
+                .put(Statistic.ARMOR_CLEANED, "clean_armor")
+                .put(Statistic.BANNER_CLEANED, "clean_banner")
+                .put(Statistic.BREWINGSTAND_INTERACTION, "interact_with_brewingstand")
+                .put(Statistic.BEACON_INTERACTION, "interact_with_beacon")
+                .put(Statistic.DROPPER_INSPECTED, "inspect_dropper")
+                .put(Statistic.DISPENSER_INSPECTED, "inspect_dispenser")
+                .put(Statistic.NOTEBLOCK_PLAYED, "play_noteblock")
+                .put(Statistic.NOTEBLOCK_TUNED, "tune_noteblock")
+                .put(Statistic.FLOWER_POTTED, "pot_flower")
+                .put(Statistic.TRAPPED_CHEST_TRIGGERED, "trigger_trapped_chest")
+                .put(Statistic.ENDERCHEST_OPENED, "open_enderchest")
+                .put(Statistic.ITEM_ENCHANTED, "enchant_item")
+                .put(Statistic.RECORD_PLAYED, "play_record")
+                .put(Statistic.FURNACE_INTERACTION, "interact_with_furnace")
+                .put(Statistic.CRAFTING_TABLE_INTERACTION, "interact_with_crafting_table")
+                .put(Statistic.CHEST_OPENED, "open_chest")
+
+                .build();
     }
 
     /**
@@ -107,79 +135,7 @@ public final class ReportsUtils
      */
     public static String getStatisticID(final Statistic statistic)
     {
-        final String name;
-
-        // We convert all keys names to 1.13+ IDs.
-        // FIXME Magic values?
-        switch (statistic) {
-            case PLAY_ONE_TICK:
-                name = "play_one_minute"; break;
-
-            case CAKE_SLICES_EATEN:
-                name = "eat_cake_slice"; break;
-
-            case CAULDRON_FILLED:
-                name = "fill_cauldron"; break;
-
-            case CAULDRON_USED:
-                name = "use_cauldron"; break;
-
-            case ARMOR_CLEANED:
-                name = "clean_armor"; break;
-
-            case BANNER_CLEANED:
-                name = "clean_banner"; break;
-
-            case BREWINGSTAND_INTERACTION:
-                name = "interact_with_brewingstand"; break;
-
-            case BEACON_INTERACTION:
-                name = "interact_with_beacon "; break;
-
-            case DROPPER_INSPECTED:
-                name = "inspect_dropper"; break;
-
-            case HOPPER_INSPECTED:
-                name = "inspect_hopper"; break;
-
-            case DISPENSER_INSPECTED:
-                name = "inspect_dispenser"; break;
-
-            case NOTEBLOCK_PLAYED:
-                name = "play_noteblock"; break;
-
-            case NOTEBLOCK_TUNED:
-                name = "tune_noteblock"; break;
-
-            case FLOWER_POTTED:
-                name = "pot_flower"; break;
-
-            case TRAPPED_CHEST_TRIGGERED:
-                name = "trigger_trapped_chest"; break;
-
-            case ENDERCHEST_OPENED:
-                name = "open_enderchest"; break;
-
-            case ITEM_ENCHANTED:
-                name = "enchant_item"; break;
-
-            case RECORD_PLAYED:
-                name = "play_record"; break;
-
-            case FURNACE_INTERACTION:
-                name = "interact_with_furnace"; break;
-
-            case CRAFTING_TABLE_INTERACTION:
-                name = "interact_with_crafting_table"; break;
-
-            case CHEST_OPENED:
-                name = "open_chest"; break;
-
-            default:
-                name = statistic.name().toLowerCase();
-        }
-
-        return "minecraft." + name;
+        return "minecraft." + STATISTICS_BUKKIT_TO_MINECRAFT.getOrDefault(statistic, statistic.name().toLowerCase());
     }
 
     /**
@@ -190,6 +146,6 @@ public final class ReportsUtils
      */
     public static String getEnchantmentID(final Enchantment enchantment)
     {
-        return ENCHANTS_BUKKIT_TO_MINECRAFT.getOrDefault(enchantment.getName(), enchantment.getName());
+        return ENCHANTS_BUKKIT_TO_MINECRAFT.getOrDefault(enchantment.getName(), enchantment.getName().toLowerCase());
     }
 }
