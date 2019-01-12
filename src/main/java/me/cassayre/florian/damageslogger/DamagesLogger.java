@@ -28,7 +28,6 @@ public class DamagesLogger extends ZPlugin
 
     public static DamagesLogger get()
     {
-        if (instance == null) throw new IllegalStateException();
         return instance;
     }
 

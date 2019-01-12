@@ -42,10 +42,7 @@ import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class ReportSettings
 {
@@ -255,6 +252,58 @@ public class ReportSettings
     }
 
     /**
+     * Only display these global statistics in the players tab.
+     *
+     * @param whitelisted The whitelist.
+     *
+     * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
+     */
+    public ReportSettings withTheseInGlobalStatisticsWhitelist(final Collection<Statistic> whitelisted)
+    {
+        playersStatisticsWhitelist.addAll(whitelisted);
+        return this;
+    }
+
+    /**
+     * Only display these used items in the players tab.
+     *
+     * @param whitelisted The whitelist.
+     *
+     * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
+     */
+    public ReportSettings withTheseInUsedStatisticsWhitelist(final Collection<Material> whitelisted)
+    {
+        playersUsedStatisticsWhitelist.addAll(whitelisted);
+        return this;
+    }
+
+    /**
+     * Only display these mined blocks in the players tab.
+     *
+     * @param whitelisted The whitelist.
+     *
+     * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
+     */
+    public ReportSettings withTheseInMinedStatisticsWhitelist(final Collection<Material> whitelisted)
+    {
+        playersMinedStatisticsWhitelist.addAll(whitelisted);
+        return this;
+    }
+
+    /**
+     * Only display these picked-up items in the players tab.
+     *
+     * @param whitelisted The whitelist.
+     *
+     * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
+     */
+    public ReportSettings withTheseInPickedUpStatisticsWhitelist(final Collection<Material> whitelisted)
+    {
+        playersPickedUpStatisticsWhitelist.addAll(whitelisted);
+        return this;
+    }
+
+    /**
      * Displays all collected statistics in the players tab.
      *
      * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
@@ -347,6 +396,74 @@ public class ReportSettings
     public ReportSettings highlightingThesePickedUpItems(final Material... highlighted)
     {
         playersPickedUpStatisticsHighlight.addAll(Arrays.asList(highlighted));
+        return this;
+    }
+
+    /**
+     * Highlights these global statistics in the players tab.
+     *
+     * Other statistics will still be accessible, but hidden by default. Because
+     * there is usually a lot of statistics collected, this can help make the
+     * report clearer.
+     *
+     * @param highlighted The highlighted statistics.
+     *
+     * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
+     */
+    public ReportSettings highlightingTheseStatistics(final Collection<Statistic> highlighted)
+    {
+        playersStatisticsHighlight.addAll(highlighted);
+        return this;
+    }
+
+    /**
+     * Highlights these used items in the players tab.
+     *
+     * Other items will still be accessible, but hidden by default. Because
+     * there is usually a lot of statistics collected, this can help make the
+     * report clearer.
+     *
+     * @param highlighted The highlighted items.
+     *
+     * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
+     */
+    public ReportSettings highlightingTheseUsedItems(final Collection<Material> highlighted)
+    {
+        playersUsedStatisticsHighlight.addAll(highlighted);
+        return this;
+    }
+
+    /**
+     * Highlights these mined blocks in the players tab.
+     *
+     * Other blocks will still be accessible, but hidden by default. Because
+     * there is usually a lot of statistics collected, this can help make the
+     * report clearer.
+     *
+     * @param highlighted The highlighted blocks.
+     *
+     * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
+     */
+    public ReportSettings highlightingTheseMinedBlocks(final Collection<Material> highlighted)
+    {
+        playersMinedStatisticsHighlight.addAll(highlighted);
+        return this;
+    }
+
+    /**
+     * Highlights these picked-up items in the players tab.
+     *
+     * Other items will still be accessible, but hidden by default. Because
+     * there is usually a lot of statistics collected, this can help make the
+     * report clearer.
+     *
+     * @param highlighted The highlighted items.
+     *
+     * @return The current {@link ReportSettings} instance, for method chaining. Use {@link #done()} to end.
+     */
+    public ReportSettings highlightingThesePickedUpItems(final Collection<Material> highlighted)
+    {
+        playersPickedUpStatisticsHighlight.addAll(highlighted);
         return this;
     }
 

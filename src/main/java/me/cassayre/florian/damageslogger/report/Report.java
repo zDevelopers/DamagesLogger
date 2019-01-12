@@ -35,13 +35,16 @@ package me.cassayre.florian.damageslogger.report;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import fr.zcraft.zlib.tools.Callback;
 import fr.zcraft.zlib.tools.PluginLogger;
+import me.cassayre.florian.damageslogger.ReportsManager;
 import me.cassayre.florian.damageslogger.report.record.DamageRecord;
 import me.cassayre.florian.damageslogger.report.record.HealRecord;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.scoreboard.Scoreboard;
 
+import java.io.File;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -164,7 +167,7 @@ public class Report
      * @param title The report's title.
      * @return Current instance, for method chaining.
      */
-    public Report title(final String title) { this.title = title; return this; }
+    public Report title(final String title) { this.title = title != null ? title : "Minecraft Report"; return this; }
 
     /**
      * Opens the settings.
@@ -178,6 +181,40 @@ public class Report
      * @return The settings.
      */
     public ReportSettings settings() { return settings; }
+
+    /**
+     * Registers this report into a manager.
+     *
+     * @return Current instance, for method chaining.
+     * @see ReportsManager#registerReport(Report) for register consequences (spoiler: positives ones).
+     */
+    public Report selfRegister() { return selfRegister(ReportsManager.get()); }
+
+    /**
+     * Registers this report into a manager.
+     *
+     * @param manager The manager to register this report into.
+     * @return Current instance, for method chaining.
+     * @see ReportsManager#registerReport(Report) for register consequences (spoiler: positives ones).
+     */
+    public Report selfRegister(final ReportsManager manager) { return manager.registerReport(this); }
+
+    /**
+     * Unregisters this report into a manager.
+     *
+     * @return Current instance, for method chaining.
+     * @see ReportsManager#unregisterReport(Report) for unregister consequences.
+     */
+    public Report selfUnregister() { return selfUnregister(ReportsManager.get()); }
+
+    /**
+     * Unregisters this report into a manager.
+     *
+     * @param manager The manager to unregister this report from.
+     * @return Current instance, for method chaining.
+     * @see ReportsManager#unregisterReport(Report) for unregister consequences.
+     */
+    public Report selfUnregister(final ReportsManager manager) { return manager.unregisterReport(this); }
 
     /**
      * Sets the start date of this report. All events/heals/damages/etc. dates will
@@ -570,6 +607,109 @@ public class Report
     public Report record(final ReportEvent event)
     {
         events.add(event);
+        return this;
+    }
+
+    /**
+     * Saves this report as JSON.
+     *
+     * The report will be saved in your plugin's data directory, under
+     * {@code reports/yyyy-mm-dd-hh-mm-ss-title-as-slug.json}.
+     *
+     * @param callbackSuccess Callback for success. Contains the file where the
+     *                        report was saved.
+     * @param callbackError Callback for error. Contains the exception.
+     *
+     * @return Current instance, for method chaining.
+     * @see #save(File, Callback, Callback) to save to a specific location.
+     */
+    public Report save(final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
+    {
+        return save(ReportsManager.get(), callbackSuccess, callbackError);
+    }
+
+    /**
+     * Saves this report as JSON.
+     *
+     * @param location The location where this report should be saved.
+     * @param callbackSuccess Callback for success. Contains the file where the
+     *                        report was saved.
+     * @param callbackError Callback for error. Contains the exception.
+     *
+     * @return Current instance, for method chaining.
+     */
+    public Report save(final File location, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
+    {
+        return save(ReportsManager.get(), location, callbackSuccess, callbackError);
+    }
+
+    /**
+     * Saves this report as JSON.
+     *
+     * The report will be saved in your plugin's data directory, under
+     * {@code reports/yyyy-mm-dd-hh-mm-ss-title-as-slug.json}.
+     *
+     * @param manager The manager to use to save this report.
+     * @param callbackSuccess Callback for success. Contains the file where the
+     *                        report was saved.
+     * @param callbackError Callback for error. Contains the exception.
+     *
+     * @return Current instance, for method chaining.
+     * @see #save(ReportsManager, File, Callback, Callback) to save to a specific
+     * location.
+     */
+    public Report save(final ReportsManager manager, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
+    {
+        manager.save(this, callbackSuccess, callbackError);
+        return this;
+    }
+
+    /**
+     * Saves this report as JSON.
+     *
+     * @param manager The manager to use to save this report.
+     * @param location The location where this report should be saved.
+     * @param callbackSuccess Callback for success. Contains the file where the
+     *                        report was saved.
+     * @param callbackError Callback for error. Contains the exception.
+     *
+     * @return Current instance, for method chaining.
+     */
+    public Report save(final ReportsManager manager, final File location, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
+    {
+        manager.save(this, location, callbackSuccess, callbackError);
+        return this;
+    }
+
+    /**
+     * Publish this report into a user-friendly web page.
+     *
+     * @param callbackSuccess Callback for success. Contains the
+     *                        published report full URL.
+     * @param callbackError Callback for error. Contains the error returned, as
+     *                      string.
+     *
+     * @return Current instance, for method chaining.
+     */
+    public Report publish(final Callback<File> callbackSuccess, final Callback<String> callbackError)
+    {
+        return publish(ReportsManager.get(), callbackSuccess, callbackError);
+    }
+
+    /**
+     * Publish this report into a user-friendly web page.
+     *
+     * @param manager The manager to use to publish this report.
+     * @param callbackSuccess Callback for success. Contains the
+     *                        published report full URL.
+     * @param callbackError Callback for error. Contains the error returned, as
+     *                      string.
+     *
+     * @return Current instance, for method chaining.
+     */
+    public Report publish(final ReportsManager manager, final Callback<File> callbackSuccess, final Callback<String> callbackError)
+    {
+        manager.publish(this, callbackSuccess, callbackError);
         return this;
     }
 

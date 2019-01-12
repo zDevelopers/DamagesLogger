@@ -51,6 +51,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permissible;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
@@ -61,19 +62,16 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * The reports manager: registers, saves, manages export & backups of, all reports.
+ * The reports manager: registers, saves, manages export & backups of,
+ * all reports.
  *
- * If you use this without the plugin, by shading the library, you must initialize the manager through zLib:
+ * If you use this without the plugin, by shading the library, you must
+ * initialize the manager first:
  *
  * <pre>
- *     final ReportsManager manager = ZLib.loadComponent(ReportsManager.class);
+ *     ReportsManager.init(yourPluginInstance);
+ *     final ReportsManager manager = ReportsManager.get();
  * </pre>
- *
- * If you're not using zLib, your plugin must be slightly modified to use it. It is as simple as adding a Maven
- * dependency and updating the class your plugin's main class depends on ({@link fr.zcraft.zlib.core.ZPlugin}
- * instead of {@link org.bukkit.plugin.java.JavaPlugin}), and you'll also gain a lot of really useful and completely
- * optional goodies to work on Minecraft plugins without any change for your users (no other plugin to install)!
- * For more information, <a href="https://github.com/zDevelopers/zLib/wiki/Installation">check out the documentation</a>.
  */
 public class ReportsManager extends ZLibComponent
 {
@@ -81,6 +79,8 @@ public class ReportsManager extends ZLibComponent
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+
+    private static ReportsManager instance = null;
 
     private final Set<Report> reports = new HashSet<>();
 
@@ -101,6 +101,41 @@ public class ReportsManager extends ZLibComponent
     private Map<UUID, Player> lastMagicDamager = new HashMap<>();
     private Map<UUID, Weapon> lastWeapon = new HashMap<>();
 
+    /**
+     * Initialize the reports manager for use as a shaded library.
+     *
+     * If you're depending on this by requiring the DamagesLogger plugin to
+     * be installed on the server, you don't need this. Use
+     * {@link DamagesLogger#getManager() this method} to get the manager.
+     *
+     * @param plugin Your plugin's instance.
+     */
+    public static void init(final JavaPlugin plugin)
+    {
+        // This constructor is used by external plugins using
+        // this as a shaded library. As such, there is no plugin
+        // so the zLib will not be initialized automatically.
+        // We have to initialize manually the zLib.
+        // We check for existing initialization just to be sure.
+        if (!ZLib.isInitialized())
+        {
+            ZLib.init(plugin);
+        }
+
+        // If shaded
+        if (DamagesLogger.get() == null || DamagesLogger.get().getManager() == null)
+        {
+            instance = ZLib.loadComponent(ReportsManager.class);
+        }
+    }
+
+    /**
+     * Retrieves the Reports Manager instance.
+     */
+    public static ReportsManager get()
+    {
+        return DamagesLogger.get() != null && DamagesLogger.get().getManager() != null ? DamagesLogger.get().getManager() : instance;
+    }
 
     @Override
     protected void onEnable()
@@ -116,6 +151,17 @@ public class ReportsManager extends ZLibComponent
         setBackup(true);
     }
 
+    /**
+     * Enables or disables reports backups.
+     *
+     * If enabled, every minute by default, all running reports will be
+     * saved into a backup directory, this directory being {@code reports/backup}
+     * under your plugin's data directory (or DamagesLogger's own data directory,
+     * if used not shaded).
+     *
+     * @param backup {@code true} to enable backups.
+     * @see #setBackupInterval(long) to change the backup interval.
+     */
     public void setBackup(boolean backup)
     {
         if (backupTask != null)
@@ -144,6 +190,11 @@ public class ReportsManager extends ZLibComponent
         this.backup = backup;
     }
 
+    /**
+     * Changes the backups interval. By default, a backup is made every minute.
+     *
+     * @param backupInterval The backup interval, in ticks.
+     */
     public void setBackupInterval(long backupInterval)
     {
         final boolean restartBackup = backup && backupInterval != this.backupInterval;
@@ -152,14 +203,34 @@ public class ReportsManager extends ZLibComponent
         if (restartBackup) setBackup(true);
     }
 
-    public void registerReport(final Report report)
+    /**
+     * Registers a report into this manager. If you use auto-track, you _must_
+     * register the report for damages, heals and event to be saved. Also,
+     * only registered reports will have backups.
+     *
+     * @param report The report to register.
+     * @return The registered report (so you can reuse it in chains).
+     */
+    public Report registerReport(final Report report)
     {
         reports.add(report);
+        return report;
     }
 
-    public void unregisterReport(final Report report)
+    /**
+     * Unregisters a report.
+     *
+     * This implies that auto-track will no longer be active, and backups will
+     * stop for this report. You'll still be able to save, publish, or event backup
+     * manually the report using the methods in this class.
+     *
+     * @param report The report to unregister.
+     * @return The registered report (so you can reuse it in chains).
+     */
+    public Report unregisterReport(final Report report)
     {
         reports.remove(report);
+        return report;
     }
 
     public Stream<Report> getTrackedReportsFor(final OfflinePlayer player)
@@ -187,13 +258,13 @@ public class ReportsManager extends ZLibComponent
 
     public void save(final Report report, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
     {
-        report.getPlayers().forEach(ReportPlayer::collectStatistics);
+        save(report, new File(saveDirectory, dateSlug(report.getStartDate()) + "-" + slug(report.getTitle()) + ".json"), callbackSuccess, callbackError);
+    }
 
-        ReportsWorker.save(
-                report,
-                new File(saveDirectory, dateSlug(report.getStartDate()) + "-" + slug(report.getTitle()) + ".json"),
-                callbackSuccess, callbackError
-        );
+    public void save(final Report report, File location, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
+    {
+        report.getPlayers().forEach(ReportPlayer::collectStatistics);
+        ReportsWorker.save(report, location, callbackSuccess, callbackError);
     }
 
     public void publish(final Report report, final Callback<File> callbackSuccess, final Callback<String> callbackError)
