@@ -33,11 +33,13 @@
  */
 package me.cassayre.florian.damageslogger;
 
+import com.google.gson.JsonObject;
 import fr.zcraft.zlib.components.i18n.I;
 import fr.zcraft.zlib.core.ZLib;
 import fr.zcraft.zlib.core.ZLibComponent;
 import fr.zcraft.zlib.tools.Callback;
 import fr.zcraft.zlib.tools.PluginLogger;
+import fr.zcraft.zlib.tools.reflection.Reflection;
 import fr.zcraft.zlib.tools.runners.RunTask;
 import me.cassayre.florian.damageslogger.listeners.PlayerConnectionListener;
 import me.cassayre.florian.damageslogger.listeners.PlayerDamagesListener;
@@ -47,7 +49,9 @@ import me.cassayre.florian.damageslogger.report.ReportPlayer;
 import me.cassayre.florian.damageslogger.report.record.DamageRecord.DamageType;
 import me.cassayre.florian.damageslogger.report.record.DamageRecord.Weapon;
 import me.cassayre.florian.damageslogger.report.record.HealRecord.HealingType;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permissible;
@@ -55,6 +59,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -75,10 +84,27 @@ import java.util.stream.Stream;
  */
 public class ReportsManager extends ZLibComponent
 {
+    private static final String PLUGIN_API_NAME = "DamagesLogger";
+    private static final String PLUGIN_API_VERSION = "1.0";
+
     private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+
+    private static MessageDigest SHA_256_DIGEST;
+
+    static
+    {
+        try
+        {
+            SHA_256_DIGEST = MessageDigest.getInstance("SHA-256");
+        }
+        catch (final NoSuchAlgorithmException e)
+        {
+            SHA_256_DIGEST = null;
+        }
+    }
 
     private static ReportsManager instance = null;
 
@@ -89,7 +115,37 @@ public class ReportsManager extends ZLibComponent
     private boolean backupErrorWarningSent = false;
     private BukkitTask backupTask = null;
 
+    /**
+     * The latest reports SHA256 checksums, to backup only if the content
+     * changed.
+     */
+    private Map<UUID, String> lastBackupDigest = new HashMap<>();
+
+    /**
+     * The directory where the reports & reports backup wll be saved by default.
+     *
+     * Reports saved using {@linkplain #save(Report, Callback, Callback) the
+     * save method} will be saved directly into this directory, and backups (saved
+     * using {@linkplain #backup(Report, Callback, Callback) the backup method}
+     * will be saved under a {@code backups} sub-directory.
+     */
     private File saveDirectory = new File(ZLib.getPlugin().getDataFolder(), "reports");
+
+    /**
+     * The remote instance base URL where reports will be published to.
+     * This URL will always be without trailing slash.
+     */
+    private String remoteInstanceURL = "http://127.0.0.1:8000";
+
+    /**
+     * The user agent of the publish request.
+     */
+    private String userAgent;
+
+    /**
+     * The cached Minecraft version.
+     */
+    private String minecraftVersion = "0.0.0";
 
     /*
      * As Bukkit does not expose the real heal cause (e.g. “golden apple”) in the regen event,
@@ -149,6 +205,53 @@ public class ReportsManager extends ZLibComponent
 
         // Launches the backup task
         setBackup(true);
+
+        // Sets the user agent
+        setUserAgent();
+    }
+
+    private void setUserAgent()
+    {
+        String minecraftVersion;
+        String serverVersion;
+
+        try
+        {
+            serverVersion = (String) Reflection.getFieldValue(Bukkit.getServer(), "serverVersion");
+            minecraftVersion = (String) Reflection.call(Reflection.getFieldValue(Bukkit.getServer(), "console"), "getVersion");
+        }
+        catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
+        {
+            final String[] version = Bukkit.getVersion().split(" \\(MC: ");
+            if (version.length >= 2)
+            {
+                minecraftVersion = StringUtils.removeEnd(version[1], ")");
+                serverVersion = version[0].trim();
+            }
+            else
+            {
+                minecraftVersion = "??";
+                serverVersion = Bukkit.getVersion();
+            }
+        }
+
+        userAgent = String.format(
+                "%s/%s (Minecraft/%s; %s/%s; %s; %s) %s/%s",
+                PLUGIN_API_NAME,
+                PLUGIN_API_VERSION,
+                minecraftVersion,
+                Bukkit.getName(),
+                Bukkit.getBukkitVersion(),
+                serverVersion,
+                System.getProperty("os.name"),
+                ZLib.getPlugin().getName(),
+                ZLib.getPlugin().getDescription().getVersion()
+        );
+
+        if (!minecraftVersion.equals("??"))
+        {
+            this.minecraftVersion = minecraftVersion;
+        }
     }
 
     /**
@@ -204,6 +307,44 @@ public class ReportsManager extends ZLibComponent
     }
 
     /**
+     * Sets the remote instance URL. This must point to the base URL of a
+     * website running the
+     * <a href="https://github.com/zDevelopers/Minecraft-Reports-GUI/">Minecraft-Reports GUI</a>,
+     * or another with a compatible API. Published reports will be sent to this
+     * website.
+     *
+     * The default value is the main instance managed by us (DamagesLogger
+     * authors).
+     *
+     * @param remoteInstanceURL The URL.
+     */
+    public void setRemoteInstanceURL(final String remoteInstanceURL)
+    {
+        this.remoteInstanceURL = StringUtils.removeEnd(remoteInstanceURL.trim(), "/");
+    }
+
+    /**
+     * <p>Sets the directory where the reports & reports backups wll be saved by
+     * default.</p>
+     *
+     * <p>Reports saved using {@linkplain #save(Report, Callback, Callback) the
+     * save method} will be saved directly into this directory, and backups
+     * (saved using {@linkplain #backup(Report, Callback, Callback) the backup
+     * method} will be saved under a {@code backups} sub-directory.</p>
+     *
+     * <p>By default, this directory is a {@code reports} sub-directory of your
+     * plugin's data folder (if used shaded) or DamagesLogger's data folder (if
+     * used by requiring the DamagesLogger plugin to be installed by the users).
+     * </p>
+     *
+     * @param saveDirectory The new directory.
+     */
+    public void setSaveDirectory(File saveDirectory)
+    {
+        this.saveDirectory = saveDirectory;
+    }
+
+    /**
      * Registers a report into this manager. If you use auto-track, you _must_
      * register the report for damages, heals and event to be saved. Also,
      * only registered reports will have backups.
@@ -213,7 +354,7 @@ public class ReportsManager extends ZLibComponent
      */
     public Report registerReport(final Report report)
     {
-        reports.add(report);
+        reports.add(report.minecraftVersion(minecraftVersion));
         return report;
     }
 
@@ -233,11 +374,29 @@ public class ReportsManager extends ZLibComponent
         return report;
     }
 
+    /**
+     * Gets all reports containing the given player, with auto-track enabled, and
+     * with the given player into the track list.
+     *
+     * @param player The player.
+     * @return A stream of reports.
+     * @see #getTrackedReportsFor(OfflinePlayer, boolean) Option to include non-
+     * tracked players.
+     */
     public Stream<Report> getTrackedReportsFor(final OfflinePlayer player)
     {
         return getTrackedReportsFor(player, false);
     }
 
+    /**
+     * Gets all reports containing the given player, with auto-track enabled.
+     *
+     * @param player The player.
+     * @param includeReportsWerePlayerIsNotTracked If {@code true}, reports containing
+     *                                             the given player but where this player
+     *                                             is not tracked will be included.
+     * @return A stream of reports.
+     */
     public Stream<Report> getTrackedReportsFor(final OfflinePlayer player, boolean includeReportsWerePlayerIsNotTracked)
     {
         return reports.stream()
@@ -245,33 +404,93 @@ public class ReportsManager extends ZLibComponent
                 .filter(report -> includeReportsWerePlayerIsNotTracked || report.isTracked(player));
     }
 
+    /**
+     * Backups this report.
+     *
+     * The backup will be saved to {@code reports/backups} in your plugin's data
+     * directory (or DamagesLogger's one if used non-shaded).
+     *
+     * The backup is automatic by default. Only use this method if you want to
+     * manually backup the report.
+     *
+     * @param report The report to backup.
+     * @param callbackSuccess Called on success, the argument being the file
+     *                        where the report's backup was saved into.
+     * @param callbackError Called on error, the argument being the exception.
+     */
     public void backup(final Report report, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
     {
         report.getPlayers().forEach(ReportPlayer::collectStatistics);
 
+        final JsonObject jsonReport = report.toJSON();
+        final String currentDigest = sha256sum(jsonReport.toString());
+
+        if (!currentDigest.isEmpty()
+                && lastBackupDigest.containsKey(report.getUUID())
+                && lastBackupDigest.get(report.getUUID()).equals(currentDigest))
+            return;
+
+        lastBackupDigest.put(report.getUUID(), currentDigest);
+
         ReportsWorker.save(
-                report,
-                new File(saveDirectory, "backup/" + dateSlug(report.getStartDate()) + "-" + slug(report.getTitle()) + "-backup-" + dateSlug(System.currentTimeMillis()) + ".json"),
+                jsonReport,
+                new File(saveDirectory, "backups/" + dateSlug(report.getStartDate()) + "-" + slug(report.getTitle()) + "-backup-" + dateSlug(System.currentTimeMillis()) + ".json"),
                 callbackSuccess, callbackError
         );
     }
 
+    /**
+     * Saves this report as JSON.
+     *
+     * The report will be saved in your plugin's data directory, under
+     * {@code reports/yyyy-mm-dd-hh-mm-ss-title-as-slug.json}.
+     *
+     * @param report The report.
+     * @param callbackSuccess Callback for success, the argument being the file
+     *                        where the report was saved.
+     * @param callbackError Callback for error. Contains the exception.
+     *
+     * @see #save(Report, File, Callback, Callback) to save to a specific location.
+     */
     public void save(final Report report, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
     {
-        save(report, new File(saveDirectory, dateSlug(report.getStartDate()) + "-" + slug(report.getTitle()) + ".json"), callbackSuccess, callbackError);
+        save(
+            report,
+            new File(saveDirectory, dateSlug(report.getStartDate()) + "-" + slug(report.getTitle()) + ".json"),
+            callbackSuccess, callbackError
+        );
     }
 
+    /**
+     * Saves the given report as JSON.
+     *
+     * @param report The report.
+     * @param location The location where this report should be saved.
+     * @param callbackSuccess Callback on success, the argument being the file
+     *                        where the report was saved.
+     * @param callbackError Callback on error, the argument being the exception.
+     *
+     * @see #save(Report, Callback, Callback) to save using the default location.
+     */
     public void save(final Report report, File location, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
     {
         report.getPlayers().forEach(ReportPlayer::collectStatistics);
         ReportsWorker.save(report, location, callbackSuccess, callbackError);
     }
 
-    public void publish(final Report report, final Callback<File> callbackSuccess, final Callback<String> callbackError)
+    /**
+     * Publish the given report into a user-friendly web page.
+     *
+     * @param report The report.
+     * @param callbackSuccess Callback on success, the argument being the
+     *                        published report full URL.
+     * @param callbackError Callback on error, the argument being the error
+     *                      returned.
+     */
+    public void publish(final Report report, final Callback<URI> callbackSuccess, final Callback<Throwable> callbackError)
     {
         report.getPlayers().forEach(ReportPlayer::collectStatistics);
-
-        // TODO
+        ReportsWorker.publish(report, remoteInstanceURL, userAgent, callbackSuccess, callbackError);
     }
 
 
@@ -368,17 +587,57 @@ public class ReportsManager extends ZLibComponent
     }
 
 
-    private static String slug(String input)
+    /**
+     * Generates a slug from the (potentially Minecraft-formatted) given string.
+     *
+     * @param input The string to convert into a slug. May contain Minecraft
+     *              formatting codes: they will be striped.
+     * @return The slug.
+     */
+    private static String slug(final String input)
     {
-        final String nowhitespace = WHITESPACE.matcher(input).replaceAll("-");
+        final String nowhitespace = WHITESPACE.matcher(ChatColor.stripColor(input)).replaceAll("-");
         final String normalized = Normalizer.normalize(nowhitespace, Normalizer.Form.NFD);
         final String slug = NON_LATIN.matcher(normalized).replaceAll("");
 
         return slug.toLowerCase(Locale.ENGLISH);
     }
 
+    /**
+     * Converts a date into a slug.
+     *
+     * @param date The date (milli-timestamp).
+     * @return The date as slug (format {@code yyyy-mm-dd-hh-mm-ss}).
+     */
     private static String dateSlug(long date)
     {
         return DATE_FORMAT.format(new Date(date));
+    }
+
+    /**
+     * Calculates the SHA256 checksum of the given input.
+     *
+     * @param input The input.
+     * @return The SHA256 checksum as an hex string, or an empty string if the
+     * checksum cannot be calculated.
+     */
+    private static String sha256sum(final String input)
+    {
+        if (SHA_256_DIGEST == null) return "";
+
+        try
+        {
+            final byte[] hash = SHA_256_DIGEST.digest(input.getBytes(StandardCharsets.UTF_8));
+            final StringBuilder hexString = new StringBuilder();
+
+            for (final byte b : hash)
+                hexString.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
+
+            return hexString.toString();
+        }
+        catch (final Exception ex)
+        {
+            return "";
+        }
     }
 }

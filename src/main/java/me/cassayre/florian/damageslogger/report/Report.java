@@ -45,6 +45,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.scoreboard.Scoreboard;
 
 import java.io.File;
+import java.net.URI;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -72,6 +73,11 @@ public class Report
      * This report's title.
      */
     private String title = "Minecraft Report";
+
+    /**
+     * The Minecraft version this report was created on.
+     */
+    private String minecraftVersion = "0.0.0";
 
     /**
      * The startDate where this report starts.
@@ -168,6 +174,16 @@ public class Report
      * @return Current instance, for method chaining.
      */
     public Report title(final String title) { this.title = title != null ? title : "Minecraft Report"; return this; }
+
+    /**
+     * Sets the Minecraft version this report was created on.
+     *
+     * Automatically called when the report is attached to a manager.
+     *
+     * @param minecraftVersion The version, as string (e.g. "1.12.2").
+     * @return Current instance, for method chaining.
+     */
+    public Report minecraftVersion(final String minecraftVersion) { this.minecraftVersion = minecraftVersion; return this; }
 
     /**
      * Opens the settings.
@@ -691,7 +707,7 @@ public class Report
      *
      * @return Current instance, for method chaining.
      */
-    public Report publish(final Callback<File> callbackSuccess, final Callback<String> callbackError)
+    public Report publish(final Callback<URI> callbackSuccess, final Callback<Throwable> callbackError)
     {
         return publish(ReportsManager.get(), callbackSuccess, callbackError);
     }
@@ -707,7 +723,7 @@ public class Report
      *
      * @return Current instance, for method chaining.
      */
-    public Report publish(final ReportsManager manager, final Callback<File> callbackSuccess, final Callback<String> callbackError)
+    public Report publish(final ReportsManager manager, final Callback<URI> callbackSuccess, final Callback<Throwable> callbackError)
     {
         manager.publish(this, callbackSuccess, callbackError);
         return this;
@@ -835,6 +851,7 @@ public class Report
         json.addProperty("match_uuid", uuid.toString());
         json.addProperty("title", title);
         json.addProperty("date", Instant.ofEpochMilli(startDate).atZone(TimeZone.getDefault().toZoneId()).toOffsetDateTime().toString());
+        json.addProperty("minecraft", minecraftVersion);
         json.add("settings", settings.toJSON());
 
         final JsonArray players = new JsonArray();

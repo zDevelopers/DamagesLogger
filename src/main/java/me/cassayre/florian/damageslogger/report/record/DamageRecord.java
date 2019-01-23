@@ -135,7 +135,7 @@ public class DamageRecord extends LifeChangeRecord
         if (damager != null) json.addProperty("damager", damager.getUniqueId().toString());
         json.addProperty("damagee", player.getUniqueId().toString());
 
-        json.addProperty("damage", (int) Math.abs(points));
+        json.addProperty("damage", pointsNormalized());
         json.addProperty("lethal", isLethal);
 
         return json;

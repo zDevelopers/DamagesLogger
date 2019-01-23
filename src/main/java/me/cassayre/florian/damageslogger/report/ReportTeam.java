@@ -75,7 +75,7 @@ public class ReportTeam
         final JsonObject json = new JsonObject();
 
         json.addProperty("name", name);
-        json.addProperty("color", color.toString());
+        json.addProperty("color", color.name());
 
         final JsonArray players = new JsonArray();
         this.players.forEach(player -> players.add(player.toString()));

@@ -4,6 +4,8 @@ import org.bukkit.entity.Player;
 
 public abstract class LifeChangeRecord extends Record implements Cloneable
 {
+    private static int POINTS_MAX = (int) Math.pow(2, 16) - 1;
+
     protected double points;
     protected boolean isLethal;
 
@@ -53,6 +55,11 @@ public abstract class LifeChangeRecord extends Record implements Cloneable
             setEndDateNow();
         else
             update();
+    }
+
+    protected int pointsNormalized()
+    {
+        return (int) Math.min(Math.abs(points), POINTS_MAX);
     }
 
     public boolean isLethal()

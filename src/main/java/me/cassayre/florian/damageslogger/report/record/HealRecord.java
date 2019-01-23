@@ -54,7 +54,7 @@ public class HealRecord extends LifeChangeRecord
         final JsonObject json = super.toJSON();
 
         json.addProperty("cause", healingType.name());
-        json.addProperty("heal", (int) Math.abs(points));
+        json.addProperty("heal", pointsNormalized());
         json.addProperty("healed", player.getUniqueId().toString());
 
         return json;
