@@ -309,7 +309,7 @@ public class ReportsManager extends ZLibComponent
     /**
      * Sets the remote instance URL. This must point to the base URL of a
      * website running the
-     * <a href="https://github.com/zDevelopers/Minecraft-Reports-GUI/">Minecraft-Reports GUI</a>,
+     * <a href="https://github.com/zDevelopers/Hawk-GUI/">Hawk GUI</a>,
      * or another with a compatible API. Published reports will be sent to this
      * website.
      *

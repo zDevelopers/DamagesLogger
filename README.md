@@ -88,7 +88,7 @@ In both cases, add Hawk to your `pom.xml` (or equivalent if you're using Gradle)
 </dependencies>
 ```
 
-#### Install through shading
+#### Install through shading
 
 You first have to shade the library into your `pom.xml`:
 
@@ -159,7 +159,7 @@ Hawk will be automatically initialized. You can go to step 2.
 
 ### Step 2: ignite
 
-Hawk is feed with data. And data is collected into reports. You'll have to create a report to collect data. It's as
+Hawk is fed with data. And data is collected into reports. You'll have to create a report to collect data. It's as
 simple as instantiating a class.
 
 ```java
@@ -169,7 +169,8 @@ final Report report = new Report()
         .selfRegister();
 ```
 
-The `selfRegister` thing registers the report into Hawk manager to enable auto-track and other features.
+The `selfRegister` thing registers the report into Hawk manager; this is required to enable auto-track and other
+features.
 
 The whole API is chained: every methods returns the current instance (with a few obvious exceptions like getters).
 You can discover the methods available in the documentation, but a typical use will be like this:
@@ -265,13 +266,13 @@ added to the timeline. But you can add your own events too!
 
 Events feature a type (their color), an icon, a title and a small description. They were designed to mimic the
 advancements design. The icon can either be a player head, a Minecraft icon or an external icon from an URL.
-External icons should be 32px × 32px. The built-in icons list
-[is available here](https://github.com/zDevelopers/Hawk-GUI/blob/master/static/scss/reports/minecraft/_icons.scss). You
-should avoid icons ending with `-large` or `-small`, or starting with `gui`, as they will badly render.
+External icons should be 32px × 32px. [The built-in icons list is available
+here](https://github.com/zDevelopers/Hawk-GUI/blob/master/static/scss/reports/minecraft/_icons.scss). You should avoid
+icons ending with `-large` or `-small`, or starting with `gui-`, as they will badly render.
 
 To create events, you can create instances directly or (recommended) use the shortcut static methods. Then register
 them into the report. Events will be by default dated from the moment the instance is created, but if you absolutely
-need to create ante- or post-dated events, use tne `ReportEvent`'s constructor accepting a `date` argument.
+need to create ante- or post-dated events, use the `ReportEvent`'s constructor accepting a `date` argument.
 
 ```java
 report
@@ -322,7 +323,7 @@ If you want to save the report to a specific location, you can use `report.save(
 We have to use callbacks because all Hawk I/O (backups, saves and publication) is executed on another thread for
 performances.
 
-Tu publish the report into the website, it's very similar but with the `publish` method. The first argument is
+To publish the report into the website, it's very similar but with the `publish` method. The first argument is
 a callback giving you the report's URL, as `URI`, called if everything succeeded. The second one is called if an
 error happens (network, invalid report for some reason) and gives you an exception (that can basically be an
 `IOException` or an `InvalidReportException`). Same, pass `null` if you don't care about errors.
@@ -343,3 +344,13 @@ report.publish(
 
 Yes, it's as simple as that. You don't have to bother with network, HTTP requests or these things, it's already
 handled under the hood. Enjoy your reports!
+
+#### Using another Hawk instance
+
+By default, Hawk reports are published onto the main instance we manage: https://hawk.carrade.eu currently. You may want
+to [host your own instance](https://github.com/zDevelopers/Hawk-GUI) and publish your reports to it. To do so, you can
+use the relevant method from the reports manager:
+
+```java
+ReportsManager.get().setRemoteInstanceURL("https://your-hawk-instance.net");
+```
