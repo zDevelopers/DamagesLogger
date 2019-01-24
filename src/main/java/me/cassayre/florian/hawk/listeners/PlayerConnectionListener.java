@@ -1,8 +1,8 @@
-package me.cassayre.florian.damageslogger.listeners;
+package me.cassayre.florian.hawk.listeners;
 
-import me.cassayre.florian.damageslogger.ReportsManager;
-import me.cassayre.florian.damageslogger.report.Report;
-import me.cassayre.florian.damageslogger.report.ReportPlayer;
+import me.cassayre.florian.hawk.ReportsManager;
+import me.cassayre.florian.hawk.report.Report;
+import me.cassayre.florian.hawk.report.ReportPlayer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -37,6 +37,6 @@ public class PlayerConnectionListener implements Listener
     {
         manager.getTrackedReportsFor(e.getPlayer())
                 .filter(Report::isStoppingTrackOnDisconnection)
-                .forEach(report -> report.untrackPlayer(e.getPlayer()));
+                .forEach(report -> report.untrack(e.getPlayer()));
     }
 }

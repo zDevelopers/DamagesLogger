@@ -31,7 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger.commands;
+package me.cassayre.florian.hawk.commands;
 
 import fr.zcraft.zlib.components.commands.Command;
 import fr.zcraft.zlib.components.commands.CommandException;

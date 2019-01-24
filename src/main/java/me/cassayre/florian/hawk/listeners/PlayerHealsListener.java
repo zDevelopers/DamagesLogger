@@ -1,9 +1,9 @@
-package me.cassayre.florian.damageslogger.listeners;
+package me.cassayre.florian.hawk.listeners;
 
 import fr.zcraft.zlib.tools.reflection.Reflection;
-import me.cassayre.florian.damageslogger.ReportsManager;
-import me.cassayre.florian.damageslogger.report.record.HealRecord;
-import me.cassayre.florian.damageslogger.report.record.HealRecord.HealingType;
+import me.cassayre.florian.hawk.ReportsManager;
+import me.cassayre.florian.hawk.report.record.HealRecord;
+import me.cassayre.florian.hawk.report.record.HealRecord.HealingType;
 import org.bukkit.Material;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;

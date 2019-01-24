@@ -31,20 +31,47 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger.report;
+package me.cassayre.florian.hawk.commands;
 
-public class InvalidReportException extends RuntimeException
+import fr.zcraft.zlib.components.commands.*;
+import fr.zcraft.zlib.components.i18n.I;
+import me.cassayre.florian.hawk.Hawk;
+import me.cassayre.florian.hawk.report.Report;
+import org.bukkit.ChatColor;
+
+import java.util.List;
+
+@CommandInfo (name = "start", usageParameters = "[record title] [--track-new-players] [--stop-track-on-death] [--stop-track-on-disconnection]")
+@WithFlags ({"track-new-players", "stop-track-on-death", "stop-track-on-disconnection"})
+public class StartCommand extends Command
 {
-    private final String code;
-
-    public InvalidReportException(final String code, final String message)
+    @Override
+    protected void run() throws CommandException
     {
-        super(message);
-        this.code = code;
+        if (Hawk.get().getReport() != null)
+        {
+            error(I.t("Hawk is still recording. Use \"{0}\" to stop the recording.", Commands.getCommandInfo(StopCommand.class).build()));
+        }
+
+        final String title = String.join(" ", args).trim();
+
+        Hawk.get().setReport(new Report()
+                .title(title.isEmpty() ? "Minecraft Report" : ChatColor.translateAlternateColorCodes('&', title))
+                .registerOnlinePlayers()
+                .registerTeamsFromScoreboard()
+                .autoTrack(true)
+                .autoTrackNewPlayers(hasFlag("track-new-players"))
+                .stopTrackOnDeath(hasFlag("stop-track-on-death"))
+                .stopTrackOnDisconnection(hasFlag("stop-track-on-disconnection"))
+        );
+
+        success(I.t("Recording has been started."));
     }
 
-    public String getCode()
+    @Override
+    protected List<String> complete()
     {
-        return code;
+        if (args.length > 0) return getMatchingSubset(args[args.length - 1], "--track-new-players", "--stop-track-on-death", "--stop-track-on-disconnection");
+        else return null;
     }
 }

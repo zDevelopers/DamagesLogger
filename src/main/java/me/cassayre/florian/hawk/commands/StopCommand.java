@@ -31,14 +31,14 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger.commands;
+package me.cassayre.florian.hawk.commands;
 
 import fr.zcraft.zlib.components.commands.*;
 import fr.zcraft.zlib.components.i18n.I;
 import fr.zcraft.zlib.core.ZLib;
 import fr.zcraft.zlib.tools.PluginLogger;
-import me.cassayre.florian.damageslogger.DamagesLogger;
-import me.cassayre.florian.damageslogger.report.Report;
+import me.cassayre.florian.hawk.Hawk;
+import me.cassayre.florian.hawk.report.Report;
 import org.bukkit.command.CommandSender;
 
 import java.io.File;
@@ -51,7 +51,7 @@ public class StopCommand extends Command
     @Override
     protected void run() throws CommandException
     {
-        final Report report = DamagesLogger.get().getReport();
+        final Report report = Hawk.get().getReport();
         final CommandSender sender = this.sender;
 
         if (report == null)
@@ -62,11 +62,11 @@ public class StopCommand extends Command
 
         info(I.t("Compiling and saving report..."));
 
-        DamagesLogger.get().getManager().save(report, file ->
+        Hawk.get().getManager().save(report, file ->
         {
             sender.sendMessage(I.t("{green}The report was successively stopped and saved."));
             sender.sendMessage(I.t("{gray}Saved to {0}", file.getAbsolutePath().replace(ZLib.getPlugin().getDataFolder().getAbsolutePath() + File.separator, "")));
-            DamagesLogger.get().setReport(null);
+            Hawk.get().setReport(null);
         }, error ->
         {
             sender.sendMessage(I.t("{red}Unable to save the report."));
@@ -76,7 +76,7 @@ public class StopCommand extends Command
 
         if (!hasFlag("no-publish"))
         {
-            DamagesLogger.get().getManager().publish(report, url ->
+            Hawk.get().getManager().publish(report, url ->
             {
                 sender.sendMessage("");
                 sender.sendMessage(I.t("{darkgreen}{bold}The report was successfully published!"));

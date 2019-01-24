@@ -31,47 +31,20 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger.commands;
+package me.cassayre.florian.hawk.report;
 
-import fr.zcraft.zlib.components.commands.*;
-import fr.zcraft.zlib.components.i18n.I;
-import me.cassayre.florian.damageslogger.DamagesLogger;
-import me.cassayre.florian.damageslogger.report.Report;
-import org.bukkit.ChatColor;
-
-import java.util.List;
-
-@CommandInfo (name = "start", usageParameters = "[record title] [--track-new-players] [--stop-track-on-death] [--stop-track-on-disconnection]")
-@WithFlags ({"track-new-players", "stop-track-on-death", "stop-track-on-disconnection"})
-public class StartCommand extends Command
+public class InvalidReportException extends RuntimeException
 {
-    @Override
-    protected void run() throws CommandException
+    private final String code;
+
+    public InvalidReportException(final String code, final String message)
     {
-        if (DamagesLogger.get().getReport() != null)
-        {
-            error(I.t("DamagesLogger is still recording. Use \"{0}\" to stop the recording.", Commands.getCommandInfo(StopCommand.class).build()));
-        }
-
-        final String title = String.join(" ", args).trim();
-
-        DamagesLogger.get().setReport(new Report()
-                .title(title.isEmpty() ? "Minecraft Report" : ChatColor.translateAlternateColorCodes('&', title))
-                .registerOnlinePlayers()
-                .registerTeamsFromScoreboard()
-                .autoTrack(true)
-                .autoTrackNewPlayers(hasFlag("track-new-players"))
-                .stopTrackOnDeath(hasFlag("stop-track-on-death"))
-                .stopTrackOnDisconnection(hasFlag("stop-track-on-disconnection"))
-        );
-
-        success(I.t("Recording has been started."));
+        super(message);
+        this.code = code;
     }
 
-    @Override
-    protected List<String> complete()
+    public String getCode()
     {
-        if (args.length > 0) return getMatchingSubset(args[args.length - 1], "--track-new-players", "--stop-track-on-death", "--stop-track-on-disconnection");
-        else return null;
+        return code;
     }
 }

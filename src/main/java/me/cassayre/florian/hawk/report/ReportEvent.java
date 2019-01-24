@@ -31,7 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger.report;
+package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonObject;
 import org.bukkit.OfflinePlayer;

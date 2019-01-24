@@ -31,13 +31,13 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger.report;
+package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonObject;
 import fr.zcraft.zlib.tools.PluginLogger;
 import fr.zcraft.zlib.tools.items.ItemUtils;
 import fr.zcraft.zlib.tools.reflection.NMSException;
-import me.cassayre.florian.damageslogger.ReportsUtils;
+import me.cassayre.florian.hawk.ReportsUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;

@@ -1,7 +1,7 @@
-package me.cassayre.florian.damageslogger.report.record;
+package me.cassayre.florian.hawk.report.record;
 
 import com.google.gson.JsonObject;
-import me.cassayre.florian.damageslogger.report.record.core.LifeChangeRecord;
+import me.cassayre.florian.hawk.report.record.core.LifeChangeRecord;
 import org.bukkit.entity.Player;
 
 public class HealRecord extends LifeChangeRecord

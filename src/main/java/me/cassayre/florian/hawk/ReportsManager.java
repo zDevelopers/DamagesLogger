@@ -31,7 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger;
+package me.cassayre.florian.hawk;
 
 import com.google.gson.JsonObject;
 import fr.zcraft.zlib.components.i18n.I;
@@ -41,14 +41,14 @@ import fr.zcraft.zlib.tools.Callback;
 import fr.zcraft.zlib.tools.PluginLogger;
 import fr.zcraft.zlib.tools.reflection.Reflection;
 import fr.zcraft.zlib.tools.runners.RunTask;
-import me.cassayre.florian.damageslogger.listeners.PlayerConnectionListener;
-import me.cassayre.florian.damageslogger.listeners.PlayerDamagesListener;
-import me.cassayre.florian.damageslogger.listeners.PlayerHealsListener;
-import me.cassayre.florian.damageslogger.report.Report;
-import me.cassayre.florian.damageslogger.report.ReportPlayer;
-import me.cassayre.florian.damageslogger.report.record.DamageRecord.DamageType;
-import me.cassayre.florian.damageslogger.report.record.DamageRecord.Weapon;
-import me.cassayre.florian.damageslogger.report.record.HealRecord.HealingType;
+import me.cassayre.florian.hawk.listeners.PlayerConnectionListener;
+import me.cassayre.florian.hawk.listeners.PlayerDamagesListener;
+import me.cassayre.florian.hawk.listeners.PlayerHealsListener;
+import me.cassayre.florian.hawk.report.Report;
+import me.cassayre.florian.hawk.report.ReportPlayer;
+import me.cassayre.florian.hawk.report.record.DamageRecord.DamageType;
+import me.cassayre.florian.hawk.report.record.DamageRecord.Weapon;
+import me.cassayre.florian.hawk.report.record.HealRecord.HealingType;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -84,7 +84,7 @@ import java.util.stream.Stream;
  */
 public class ReportsManager extends ZLibComponent
 {
-    private static final String PLUGIN_API_NAME = "DamagesLogger";
+    private static final String PLUGIN_API_NAME = "Hawk";
     private static final String PLUGIN_API_VERSION = "1.0";
 
     private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
@@ -160,9 +160,9 @@ public class ReportsManager extends ZLibComponent
     /**
      * Initialize the reports manager for use as a shaded library.
      *
-     * If you're depending on this by requiring the DamagesLogger plugin to
+     * If you're depending on this by requiring the Hawk plugin to
      * be installed on the server, you don't need this. Use
-     * {@link DamagesLogger#getManager() this method} to get the manager.
+     * {@link Hawk#getManager() this method} to get the manager.
      *
      * @param plugin Your plugin's instance.
      */
@@ -179,7 +179,7 @@ public class ReportsManager extends ZLibComponent
         }
 
         // If shaded
-        if (DamagesLogger.get() == null || DamagesLogger.get().getManager() == null)
+        if (Hawk.get() == null || Hawk.get().getManager() == null)
         {
             instance = ZLib.loadComponent(ReportsManager.class);
         }
@@ -190,7 +190,7 @@ public class ReportsManager extends ZLibComponent
      */
     public static ReportsManager get()
     {
-        return DamagesLogger.get() != null && DamagesLogger.get().getManager() != null ? DamagesLogger.get().getManager() : instance;
+        return Hawk.get() != null && Hawk.get().getManager() != null ? Hawk.get().getManager() : instance;
     }
 
     @Override
@@ -259,8 +259,8 @@ public class ReportsManager extends ZLibComponent
      *
      * If enabled, every minute by default, all running reports will be
      * saved into a backup directory, this directory being {@code reports/backup}
-     * under your plugin's data directory (or DamagesLogger's own data directory,
-     * if used not shaded).
+     * under your plugin's data directory (or Hawk's own data directory, if used
+     * not shaded).
      *
      * @param backup {@code true} to enable backups.
      * @see #setBackupInterval(long) to change the backup interval.
@@ -313,8 +313,7 @@ public class ReportsManager extends ZLibComponent
      * or another with a compatible API. Published reports will be sent to this
      * website.
      *
-     * The default value is the main instance managed by us (DamagesLogger
-     * authors).
+     * The default value is the main instance managed by us (Hawk authors).
      *
      * @param remoteInstanceURL The URL.
      */
@@ -333,9 +332,8 @@ public class ReportsManager extends ZLibComponent
      * method} will be saved under a {@code backups} sub-directory.</p>
      *
      * <p>By default, this directory is a {@code reports} sub-directory of your
-     * plugin's data folder (if used shaded) or DamagesLogger's data folder (if
-     * used by requiring the DamagesLogger plugin to be installed by the users).
-     * </p>
+     * plugin's data folder (if used shaded) or Hawk's data folder (if used by
+     * requiring the Hawk plugin to be installed by the users).</p>
      *
      * @param saveDirectory The new directory.
      */
@@ -408,7 +406,7 @@ public class ReportsManager extends ZLibComponent
      * Backups this report.
      *
      * The backup will be saved to {@code reports/backups} in your plugin's data
-     * directory (or DamagesLogger's one if used non-shaded).
+     * directory (or Hawk's one if used non-shaded).
      *
      * The backup is automatic by default. Only use this method if you want to
      * manually backup the report.
@@ -420,7 +418,7 @@ public class ReportsManager extends ZLibComponent
      */
     public void backup(final Report report, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
     {
-        report.getPlayers().forEach(ReportPlayer::collectStatistics);
+        report.getPlayers().stream().filter(player -> report.isTracked(player.getUniqueId())).forEach(ReportPlayer::collectStatistics);
 
         final JsonObject jsonReport = report.toJSON();
         final String currentDigest = sha256sum(jsonReport.toString());
@@ -474,7 +472,7 @@ public class ReportsManager extends ZLibComponent
      */
     public void save(final Report report, File location, final Callback<File> callbackSuccess, final Callback<Throwable> callbackError)
     {
-        report.getPlayers().forEach(ReportPlayer::collectStatistics);
+        report.getPlayers().stream().filter(player -> report.isTracked(player.getUniqueId())).forEach(ReportPlayer::collectStatistics);
         ReportsWorker.save(report, location, callbackSuccess, callbackError);
     }
 
@@ -489,7 +487,7 @@ public class ReportsManager extends ZLibComponent
      */
     public void publish(final Report report, final Callback<URI> callbackSuccess, final Callback<Throwable> callbackError)
     {
-        report.getPlayers().forEach(ReportPlayer::collectStatistics);
+        report.getPlayers().stream().filter(player -> report.isTracked(player.getUniqueId())).forEach(ReportPlayer::collectStatistics);
         ReportsWorker.publish(report, remoteInstanceURL, userAgent, callbackSuccess, callbackError);
     }
 

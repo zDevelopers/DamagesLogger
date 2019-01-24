@@ -31,7 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger;
+package me.cassayre.florian.hawk;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -43,8 +43,8 @@ import fr.zcraft.zlib.components.worker.WorkerAttributes;
 import fr.zcraft.zlib.components.worker.WorkerCallback;
 import fr.zcraft.zlib.components.worker.WorkerRunnable;
 import fr.zcraft.zlib.tools.Callback;
-import me.cassayre.florian.damageslogger.report.InvalidReportException;
-import me.cassayre.florian.damageslogger.report.Report;
+import me.cassayre.florian.hawk.report.InvalidReportException;
+import me.cassayre.florian.hawk.report.Report;
 
 import java.io.*;
 import java.net.HttpURLConnection;

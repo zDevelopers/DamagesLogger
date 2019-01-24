@@ -1,12 +1,12 @@
-package me.cassayre.florian.damageslogger.listeners;
+package me.cassayre.florian.hawk.listeners;
 
 import fr.zcraft.zlib.components.i18n.I;
-import me.cassayre.florian.damageslogger.ReportsManager;
-import me.cassayre.florian.damageslogger.report.Report;
-import me.cassayre.florian.damageslogger.report.ReportEvent;
-import me.cassayre.florian.damageslogger.report.record.DamageRecord;
-import me.cassayre.florian.damageslogger.report.record.DamageRecord.DamageType;
-import me.cassayre.florian.damageslogger.report.record.DamageRecord.Weapon;
+import me.cassayre.florian.hawk.ReportsManager;
+import me.cassayre.florian.hawk.report.Report;
+import me.cassayre.florian.hawk.report.ReportEvent;
+import me.cassayre.florian.hawk.report.record.DamageRecord;
+import me.cassayre.florian.hawk.report.record.DamageRecord.DamageType;
+import me.cassayre.florian.hawk.report.record.DamageRecord.Weapon;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -46,7 +46,7 @@ public class PlayerDamagesListener implements Listener
     {
         manager.getTrackedReportsFor(ev.getEntity())
                 .filter(Report::isStoppingTrackOnDeath)
-                .forEach(report -> report.untrackPlayer(ev.getEntity()));
+                .forEach(report -> report.untrack(ev.getEntity()));
 
         manager.getTrackedReportsFor(ev.getEntity())
                 .filter(Report::isAddingDefaultEvents)

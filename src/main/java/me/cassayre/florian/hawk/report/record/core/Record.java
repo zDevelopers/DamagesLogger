@@ -1,4 +1,4 @@
-package me.cassayre.florian.damageslogger.report.record.core;
+package me.cassayre.florian.hawk.report.record.core;
 
 import com.google.gson.JsonObject;
 import org.bukkit.OfflinePlayer;

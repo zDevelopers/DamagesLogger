@@ -31,7 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger;
+package me.cassayre.florian.hawk;
 
 import com.google.common.collect.ImmutableMap;
 import org.bukkit.Statistic;

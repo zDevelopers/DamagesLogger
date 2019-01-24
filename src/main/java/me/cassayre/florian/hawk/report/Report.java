@@ -31,15 +31,15 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
-package me.cassayre.florian.damageslogger.report;
+package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import fr.zcraft.zlib.tools.Callback;
 import fr.zcraft.zlib.tools.PluginLogger;
-import me.cassayre.florian.damageslogger.ReportsManager;
-import me.cassayre.florian.damageslogger.report.record.DamageRecord;
-import me.cassayre.florian.damageslogger.report.record.HealRecord;
+import me.cassayre.florian.hawk.ReportsManager;
+import me.cassayre.florian.hawk.report.record.DamageRecord;
+import me.cassayre.florian.hawk.report.record.HealRecord;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.scoreboard.Scoreboard;
@@ -354,7 +354,7 @@ public class Report
     {
         players.forEach(player -> {
             this.players.put(player.getUniqueId(), new ReportPlayer(player));
-            trackPlayer(player);
+            track(player);
         });
 
         return this;
@@ -378,7 +378,7 @@ public class Report
      * @param player The player to track.
      * @return Current instance, for method chaining.
      */
-    public Report trackPlayer(OfflinePlayer player)
+    public Report track(OfflinePlayer player)
     {
         ensurePlayer(player);
         trackedPlayers.add(player.getUniqueId());
@@ -396,13 +396,15 @@ public class Report
      * @param player The player to track.
      * @return Current instance, for method chaining.
      */
-    public Report untrackPlayer(final OfflinePlayer player)
+    public Report untrack(final OfflinePlayer player)
     {
         ensurePlayer(player);
         trackedPlayers.remove(player.getUniqueId());
 
         if (player.isOnline())
         {
+            // TODO If offline, collect statistics when the player is back
+            //  online automatically.
             players.get(player.getUniqueId()).collectStatistics();
         }
 
