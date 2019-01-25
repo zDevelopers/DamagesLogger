@@ -55,9 +55,9 @@ public class ReportPlayer
     private final UUID uuid;
     private final String name;
 
-    private String tagLine;
-    private String tagLineSecondary;
-    private String tagLineDetails;
+    private String tagLine = null;
+    private String tagLineSecondary = null;
+    private String tagLineDetails = null;
 
     private boolean hasPreviousStatistics = false;
 
@@ -92,6 +92,34 @@ public class ReportPlayer
     public boolean hasPreviousStatistics()
     {
         return hasPreviousStatistics;
+    }
+
+    /**
+     * Sets the tag line displayed in the player's list in the reports page.
+     *
+     * In the following example, let's say we want to tag the player as a white
+     * werewolf in a Werewolf UHC game.
+     *
+     * @param tagLine This is the main attribute. It could contains « White Werewolf ».
+     */
+    public void setTagLine(final String tagLine)
+    {
+        setTagLine(tagLine, null, null);
+    }
+
+    /**
+     * Sets the tag line displayed in the player's list in the reports page.
+     *
+     * In the following example, let's say we want to tag the player as a white
+     * werewolf in a Werewolf UHC game.
+     *
+     * @param tagLine This is the main attribute. It could contains « White Werewolf ».
+     * @param tagLineSecondary This is a secondary attribute displayed smaller, under the main one.
+     *                         It could contains « Against the village ».
+     */
+    public void setTagLine(final String tagLine, final String tagLineSecondary)
+    {
+        setTagLine(tagLine, tagLineSecondary, null);
     }
 
     /**

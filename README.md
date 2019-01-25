@@ -227,6 +227,26 @@ saved into the report. You can track (or re-track) new players using `report.tra
 
 When you untrack a player, if it is online, its statistics will be collected.
 
+#### Adding light metadata (“tags”) on players
+
+If, in the context of your game, it could have a sense to tag players with some piece of information, you can
+specify that into the report. These “tags“ will be displayed under the player's avatar onto the damages/heals/etc.
+report section. Here's a few example where this can be useful:
+
+- in UHC Traitors scenario, to identify traitors in the report;
+- in Werewolves UHC, to specify the players' roles and maybe a short description;
+- in every other case were players could have a tag on them.
+
+To add a tag, retrieve the internal `ReportPlayer` instance for the given player, and set the tag like so:
+
+```java
+report.getPlayer(player).setTagLine("White Werewolf", "Against the villager");
+```
+
+The first parameter will be the main tag; the second (optional) a secondary one, displayed a bit smaller under it. The
+third one, if any, will contains an extended description displayed while hovering the tag. In this very specific
+example, it could contain a short description of the White Werewolf role.
+
 #### Adding teams to the report
 
 Reports can display teams in the players list, and group damages reports by team (soon). For that you'll have to
@@ -283,7 +303,7 @@ report
         /* player */ Bukkit.getOfflinePlayer("Notch")
     ))
     
-    // Evet with a built-in icon (without description)
+    // Event with a built-in icon (without description)
     .record(ReportEvent.withIcon(
         "A wild event appears",
         "block-glazed-terracotta-purple"
@@ -314,6 +334,8 @@ First thing, ongoing reports (all of them) are automatically saved into a backup
 directory is a sub-directory `backup` of the save directory, this one being by default the `reports` directory of
 your plugin (if used shaded) or Hawk (if used as a standard dependency).
 
+#### Save
+
 To save the report as JSON, use the `report.save` method. It accepts two callbacks if you want to act on success or
 error; the first one gives you the `File` where the report was saved; the second one the `Throwable` exception if an
 error occurred. If you don't care about the success or error of the operation, set the callback(s) to `null`.
@@ -322,6 +344,8 @@ If you want to save the report to a specific location, you can use `report.save(
 
 We have to use callbacks because all Hawk I/O (backups, saves and publication) is executed on another thread for
 performances.
+
+#### Publish
 
 To publish the report into the website, it's very similar but with the `publish` method. The first argument is
 a callback giving you the report's URL, as `URI`, called if everything succeeded. The second one is called if an
@@ -332,12 +356,12 @@ To wrap everything up into an example:
 
 ```java
 report.save(
-    file -> /* do something with the saved File */,
+    file ->  /* do something with the saved File */,
     error -> /* handle the error */
 );
 
 report.publish(
-    uri -> /* do something with the URI (broadcast uri.toString() ?) */,
+    uri ->   /* do something with the URI (broadcast uri.toString()?) */,
     error -> /* handle the error */
 );
 ```

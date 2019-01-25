@@ -782,6 +782,16 @@ public class Report
         return Collections.unmodifiableSet(new HashSet<>(players.values()));
     }
 
+    public ReportPlayer getPlayer(final UUID playerID)
+    {
+        return players.get(playerID);
+    }
+
+    public ReportPlayer getPlayer(final OfflinePlayer player)
+    {
+        return players.get(player.getUniqueId());
+    }
+
     public Set<UUID> getTrackedPlayers()
     {
         return Collections.unmodifiableSet(trackedPlayers);
