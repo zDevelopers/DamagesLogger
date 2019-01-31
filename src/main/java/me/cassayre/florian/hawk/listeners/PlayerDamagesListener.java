@@ -7,6 +7,7 @@ import me.cassayre.florian.hawk.report.ReportEvent;
 import me.cassayre.florian.hawk.report.record.DamageRecord;
 import me.cassayre.florian.hawk.report.record.DamageRecord.DamageType;
 import me.cassayre.florian.hawk.report.record.DamageRecord.Weapon;
+import org.bukkit.ChatColor;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -17,6 +18,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Map;
 
@@ -69,17 +71,17 @@ public class PlayerDamagesListener implements Listener
         final boolean isLethal = player.getHealth() - damages <= 0;
 
         final DamageType damageType = getDamageType(ev, player);
-        final WeaponWithEnchantments weapon = getWeapon(ev, player);
+        final WeaponAttributes weapon = getWeapon(ev, player);
 
         final DamageRecord record;
 
         if (damageType == DamageType.PLAYER)
         {
-            record = new DamageRecord(player, damages, weapon.weapon, weapon.enchantments, getPlayerDamager(ev, player), isLethal);
+            record = new DamageRecord(player, damages, weapon.weapon, weapon.name, weapon.enchantments, getPlayerDamager(ev, player), isLethal);
         }
         else
         {
-            record = new DamageRecord(player, damages, weapon.weapon, weapon.enchantments, damageType, isLethal);
+            record = new DamageRecord(player, damages, weapon.weapon, weapon.name, weapon.enchantments, damageType, isLethal);
         }
 
         manager.getTrackedReportsFor(player).forEach(report -> report.record(record));
@@ -348,7 +350,7 @@ public class PlayerDamagesListener implements Listener
         else return null;
     }
 
-    private WeaponWithEnchantments getWeapon(final EntityDamageEvent ev, final Player damaged)
+    private WeaponAttributes getWeapon(final EntityDamageEvent ev, final Player damaged)
     {
         final ItemStack weapon;
 
@@ -364,7 +366,7 @@ public class PlayerDamagesListener implements Listener
                 }
                 else
                 {
-                    return new WeaponWithEnchantments(Weapon.UNKNOWN);
+                    return new WeaponAttributes(Weapon.UNKNOWN);
                 }
             }
             else if (damager instanceof LivingEntity)
@@ -373,11 +375,11 @@ public class PlayerDamagesListener implements Listener
             }
             else if (damager instanceof ThrownPotion)
             {
-                return new WeaponWithEnchantments(Weapon.MAGIC);
+                return new WeaponAttributes(Weapon.MAGIC);
             }
             else
             {
-                return new WeaponWithEnchantments(Weapon.UNKNOWN);
+                return new WeaponAttributes(Weapon.UNKNOWN);
             }
         }
         else
@@ -390,11 +392,11 @@ public class PlayerDamagesListener implements Listener
                         // If it's the same, we don't care about returning enchantments,
                         // as the damage will be merged with the previous one, containing
                         // them.
-                        return new WeaponWithEnchantments(Weapon.BOW);
+                        return new WeaponAttributes(Weapon.BOW);
 
                     case MAGIC:
                     default:
-                        return new WeaponWithEnchantments(Weapon.MAGIC);
+                        return new WeaponAttributes(Weapon.MAGIC);
                 }
             }
 
@@ -402,49 +404,86 @@ public class PlayerDamagesListener implements Listener
             // FIXME Magic Value: a Wither Skeleton could use something else than a stone sword in some special cases.
             else if (ev.getCause() == DamageCause.WITHER && manager._getLastWeapon(damaged) == Weapon.SWORD_STONE)
             {
-                return new WeaponWithEnchantments(Weapon.SWORD_STONE);
+                return new WeaponAttributes(Weapon.SWORD_STONE);
             }
 
-            else return new WeaponWithEnchantments(Weapon.UNKNOWN);
+            else return new WeaponAttributes(Weapon.UNKNOWN);
         }
 
         if (ev.getCause() == DamageCause.THORNS)
         {
-            return new WeaponWithEnchantments(Weapon.THORNS);
+            return new WeaponAttributes(
+                    Weapon.THORNS,
+                    ev.getEntity() instanceof LivingEntity
+                            ? ((LivingEntity) ev.getEntity()).getEquipment().getChestplate()
+                            : null
+            );
         }
 
         switch (weapon.getType())
         {
-            case WOOD_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_WOOD, weapon.getEnchantments());
-            case GOLD_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_GOLD, weapon.getEnchantments());
-            case STONE_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_STONE, weapon.getEnchantments());
-            case IRON_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_IRON, weapon.getEnchantments());
-            case DIAMOND_SWORD: return new WeaponWithEnchantments(Weapon.SWORD_DIAMOND, weapon.getEnchantments());
-            case WOOD_AXE: return new WeaponWithEnchantments(Weapon.AXE_WOOD, weapon.getEnchantments());
-            case GOLD_AXE: return new WeaponWithEnchantments(Weapon.AXE_GOLD, weapon.getEnchantments());
-            case STONE_AXE: return new WeaponWithEnchantments(Weapon.AXE_STONE, weapon.getEnchantments());
-            case IRON_AXE: return new WeaponWithEnchantments(Weapon.AXE_IRON, weapon.getEnchantments());
-            case DIAMOND_AXE: return new WeaponWithEnchantments(Weapon.AXE_DIAMOND, weapon.getEnchantments());
-            case BOW: return new WeaponWithEnchantments(Weapon.BOW, weapon.getEnchantments());
-            default: return new WeaponWithEnchantments(Weapon.FISTS);
+            case WOOD_SWORD: return new WeaponAttributes(Weapon.SWORD_WOOD, weapon);
+            case GOLD_SWORD: return new WeaponAttributes(Weapon.SWORD_GOLD, weapon);
+            case STONE_SWORD: return new WeaponAttributes(Weapon.SWORD_STONE, weapon);
+            case IRON_SWORD: return new WeaponAttributes(Weapon.SWORD_IRON, weapon);
+            case DIAMOND_SWORD: return new WeaponAttributes(Weapon.SWORD_DIAMOND, weapon);
+            case WOOD_AXE: return new WeaponAttributes(Weapon.AXE_WOOD, weapon);
+            case GOLD_AXE: return new WeaponAttributes(Weapon.AXE_GOLD, weapon);
+            case STONE_AXE: return new WeaponAttributes(Weapon.AXE_STONE, weapon);
+            case IRON_AXE: return new WeaponAttributes(Weapon.AXE_IRON, weapon);
+            case DIAMOND_AXE: return new WeaponAttributes(Weapon.AXE_DIAMOND, weapon);
+            case BOW: return new WeaponAttributes(Weapon.BOW, weapon);
+            default: return new WeaponAttributes(Weapon.FISTS);
         }
     }
 
-    private class WeaponWithEnchantments
+    private class WeaponAttributes
     {
         private final Weapon weapon;
+        private final String name;
         private final Map<Enchantment, Integer> enchantments;
 
-        private WeaponWithEnchantments(Weapon weapon, Map<Enchantment, Integer> enchantments)
+        private WeaponAttributes(Weapon weapon, String name, Map<Enchantment, Integer> enchantments)
         {
             this.weapon = weapon;
+            this.name = name;
             this.enchantments = enchantments;
         }
 
-        private WeaponWithEnchantments(Weapon weapon)
+        private WeaponAttributes(Weapon weapon, Map<Enchantment, Integer> enchantments)
         {
             this.weapon = weapon;
+            this.name = null;
+            this.enchantments = enchantments;
+        }
+
+        private WeaponAttributes(Weapon weapon, String name)
+        {
+            this.weapon = weapon;
+            this.name = name;
             this.enchantments = null;
+        }
+
+        private WeaponAttributes(Weapon weapon, ItemStack item)
+        {
+            this.weapon = weapon;
+            this.name = getDisplayName(item);
+            this.enchantments = item.getEnchantments();
+        }
+
+        private WeaponAttributes(Weapon weapon)
+        {
+            this.weapon = weapon;
+            this.name = null;
+            this.enchantments = null;
+        }
+
+        private String getDisplayName(final ItemStack item)
+        {
+            if (item == null || !item.hasItemMeta()) return null;
+            final ItemMeta meta = item.getItemMeta();
+
+            return meta.hasDisplayName() ? ChatColor.stripColor(meta.getDisplayName()).trim() : null;
         }
     }
 }

@@ -135,7 +135,7 @@ public class ReportsManager extends ZLibComponent
      * The remote instance base URL where reports will be published to.
      * This URL will always be without trailing slash.
      */
-    private String remoteInstanceURL = "http://127.0.0.1:8000";
+    private String remoteInstanceURL = "http://hawk.carrade.eu";
 
     /**
      * The user agent of the publish request.

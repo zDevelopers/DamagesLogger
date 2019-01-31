@@ -166,22 +166,21 @@ public class ReportsWorker extends Worker
                         );
                     }
 
-                    if (jsonResponse.has("url"))
+                    if (!jsonResponse.has("uri"))
                     {
                         throw new IOException("The returned JSON value is invalid (missing key `url`).");
                     }
 
                     try
                     {
-                        //return new URI(jsonResponse.get("url").getAsString());
-                        return new URI("http://127.0.0.1:8000/K2yc7H57");
+                        return new URI(jsonResponse.get("uri").getAsString());
                     }
-                    catch (URISyntaxException e)
+                    catch (final URISyntaxException e)
                     {
                         throw new IOException("The returned URL is invalid", e);
                     }
                 }
-                catch (JsonSyntaxException e)
+                catch (final JsonSyntaxException e)
                 {
                     throw new IOException("HTTP request failed: invalid return type.", e);
                 }

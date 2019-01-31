@@ -17,78 +17,83 @@ public class DamageRecord extends LifeChangeRecord
 {
     private final DamageType damageType;
     private final Weapon weapon;
+    private final String weaponName;
     private final Map<Enchantment, Integer> weaponEnchantments;
     private final OfflinePlayer damager;
 
-    public DamageRecord(Player player, double points, Weapon weapon, Player damager)
+    public DamageRecord(Player player, double points, Weapon weapon, String weaponName, Player damager)
     {
-        this(player, points, weapon, damager, false);
+        this(player, points, weapon, weaponName, damager, false);
     }
 
-    public DamageRecord(Player player, double points, Weapon weapon, Player damager, boolean isLethal)
+    public DamageRecord(Player player, double points, Weapon weapon, String weaponName, Player damager, boolean isLethal)
     {
-        this(player, points, weapon, null, damager, isLethal);
+        this(player, points, weapon, weaponName, null, damager, isLethal);
     }
 
-    public DamageRecord(Player player, double points, Weapon weapon, Map<Enchantment, Integer> weaponEnchantments, Player damager, boolean isLethal)
+    public DamageRecord(Player player, double points, Weapon weapon, String weaponName, Map<Enchantment, Integer> weaponEnchantments, Player damager, boolean isLethal)
     {
         super(player, points, isLethal);
 
         this.weapon = weapon;
+        this.weaponName = weaponName;
         this.weaponEnchantments = weaponEnchantments != null ? new HashMap<>(weaponEnchantments) : Collections.emptyMap();
         this.damager = damager;
         this.damageType = DamageType.PLAYER;
     }
 
-    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, Player damager, boolean isLethal)
+    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, String weaponName, Player damager, boolean isLethal)
     {
-        this(player, startDate, endDate, points, weapon, null, damager, isLethal);
+        this(player, startDate, endDate, points, weapon, weaponName, null, damager, isLethal);
     }
 
-    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, Map<Enchantment, Integer> weaponEnchantments, Player damager, boolean isLethal)
+    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, String weaponName, Map<Enchantment, Integer> weaponEnchantments, Player damager, boolean isLethal)
     {
         super(player, startDate, endDate, points, isLethal);
 
         this.weapon = weapon;
+        this.weaponName = weaponName;
         this.weaponEnchantments = weaponEnchantments != null ? new HashMap<>(weaponEnchantments) : Collections.emptyMap();
         this.damager = damager;
         this.damageType = DamageType.PLAYER;
     }
 
-    public DamageRecord(Player player, double points, Weapon weapon, DamageType damageType)
+    public DamageRecord(Player player, double points, Weapon weapon, String weaponName, DamageType damageType)
     {
-        this(player, points, weapon, damageType, false);
+        this(player, points, weapon, weaponName, damageType, false);
     }
 
-    public DamageRecord(Player player, double points, Weapon weapon, DamageType damageType, boolean isLethal)
+    public DamageRecord(Player player, double points, Weapon weapon, String weaponName, DamageType damageType, boolean isLethal)
     {
-        this(player, points, weapon, null, damageType, isLethal);
+        this(player, points, weapon, weaponName, null, damageType, isLethal);
     }
 
-    public DamageRecord(Player player, double points, Weapon weapon, Map<Enchantment, Integer> weaponEnchantments, DamageType damageType, boolean isLethal)
+    public DamageRecord(Player player, double points, Weapon weapon, String weaponName, Map<Enchantment, Integer> weaponEnchantments, DamageType damageType, boolean isLethal)
     {
         super(player, points, isLethal);
 
         Validate.isTrue(damageType != DamageType.PLAYER, "To create a player damage, use the constructors accepting a Player argument.");
 
         this.weapon = weapon;
+        this.weaponName = weaponName;
         this.weaponEnchantments = weaponEnchantments != null ? new HashMap<>(weaponEnchantments) : Collections.emptyMap();
         this.damager = null;
         this.damageType = damageType;
     }
 
-    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, DamageType damageType, boolean isLethal)
+    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, String weaponName, DamageType damageType, boolean isLethal)
     {
-        this(player, startDate, endDate, points, weapon, null, damageType, isLethal);
+        this(player, startDate, endDate, points, weapon, weaponName, null, damageType, isLethal);
     }
 
-    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, Map<Enchantment, Integer> weaponEnchantments, DamageType damageType, boolean isLethal)
+    public DamageRecord(Player player, long startDate, long endDate, double points, Weapon weapon, String weaponName, Map<Enchantment, Integer> weaponEnchantments, DamageType damageType, boolean isLethal)
     {
         super(player, startDate, endDate, points, isLethal);
 
         Validate.isTrue(damageType != DamageType.PLAYER, "To create a player damage, use the constructors accepting a Player argument.");
 
         this.weapon = weapon;
+        this.weaponName = weaponName;
         this.weaponEnchantments = weaponEnchantments != null ? new HashMap<>(weaponEnchantments) : Collections.emptyMap();
         this.damager = null;
         this.damageType = damageType;
@@ -123,6 +128,7 @@ public class DamageRecord extends LifeChangeRecord
 
         json.addProperty("cause", damageType.name());
         json.addProperty("weapon", weapon != null ? weapon.name() : null);
+        json.addProperty("weapon_name", weaponName);
 
         if (!weaponEnchantments.isEmpty())
         {
