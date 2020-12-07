@@ -31,16 +31,15 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
+
 package me.cassayre.florian.hawk;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.bukkit.Statistic;
 import org.bukkit.enchantments.Enchantment;
 
-import java.util.Map;
-
-public final class ReportsUtils
-{
+public final class ReportsUtils {
     private static final Map<String, String> ENCHANTS_BUKKIT_TO_MINECRAFT;
     private static final Map<Statistic, String> STATISTICS_BUKKIT_TO_MINECRAFT;
 
@@ -103,7 +102,8 @@ public final class ReportsUtils
         // Statistics for whose the enum name differs from th 1.13+ ID in uppercase.
         STATISTICS_BUKKIT_TO_MINECRAFT = ImmutableMap.<Statistic, String>builder()
 
-                .put(Statistic.PLAY_ONE_TICK, "play_one_minute")  // Warning: misleading Minecraft name, as it's actually ticks.
+                .put(Statistic.PLAY_ONE_MINUTE,
+                        "play_one_minute")  // Warning: misleading Minecraft name, as it's actually ticks.
                 .put(Statistic.CAKE_SLICES_EATEN, "eat_cake_slice")
                 .put(Statistic.CAULDRON_FILLED, "fill_cauldron")
                 .put(Statistic.CAULDRON_USED, "use_cauldron")
@@ -133,8 +133,7 @@ public final class ReportsUtils
      * @param statistic The statistic.
      * @return The 1.13+ ID (including “minecraft.”).
      */
-    public static String getStatisticID(final Statistic statistic)
-    {
+    public static String getStatisticID(final Statistic statistic) {
         return "minecraft." + STATISTICS_BUKKIT_TO_MINECRAFT.getOrDefault(statistic, statistic.name().toLowerCase());
     }
 
@@ -144,8 +143,7 @@ public final class ReportsUtils
      * @param enchantment The enchant.
      * @return The 1.13+ ID.
      */
-    public static String getEnchantmentID(final Enchantment enchantment)
-    {
+    public static String getEnchantmentID(final Enchantment enchantment) {
         return ENCHANTS_BUKKIT_TO_MINECRAFT.getOrDefault(enchantment.getName(), enchantment.getName().toLowerCase());
     }
 }

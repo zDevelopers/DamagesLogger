@@ -31,6 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
+
 package me.cassayre.florian.hawk.commands;
 
 import fr.zcraft.zlib.components.commands.*;
@@ -44,19 +45,17 @@ import org.bukkit.command.CommandSender;
 import java.io.File;
 import java.util.List;
 
-@CommandInfo (name = "stop", usageParameters = "[--no-publish]")
-@WithFlags ({"no-publish"})
-public class StopCommand extends Command
-{
+@CommandInfo(name = "stop", usageParameters = "[--no-publish]")
+@WithFlags({"no-publish"})
+public class StopCommand extends Command {
     @Override
-    protected void run() throws CommandException
-    {
+    protected void run() throws CommandException {
         final Report report = Hawk.get().getReport();
         final CommandSender sender = this.sender;
 
-        if (report == null)
-        {
-            error(I.t("There is no running recorder. Use {0} to start recording a new report.", Commands.getCommandInfo(StartCommand.class).build()));
+        if (report == null) {
+            error(I.t("There is no running recorder. Use {0} to start recording a new report.",
+                    Commands.getCommandInfo(StartCommand.class).build()));
             return;
         }
 
@@ -65,7 +64,8 @@ public class StopCommand extends Command
         Hawk.get().getManager().save(report, file ->
         {
             sender.sendMessage(I.t("{green}The report was successively stopped and saved."));
-            sender.sendMessage(I.t("{gray}Saved to {0}", file.getAbsolutePath().replace(ZLib.getPlugin().getDataFolder().getAbsolutePath() + File.separator, "")));
+            sender.sendMessage(I.t("{gray}Saved to {0}", file.getAbsolutePath()
+                    .replace(QuartzLib.getPlugin().getDataFolder().getAbsolutePath() + File.separator, "")));
             Hawk.get().setReport(null);
         }, error ->
         {
@@ -74,8 +74,7 @@ public class StopCommand extends Command
             PluginLogger.error("Unable to save record to file.", error);
         });
 
-        if (!hasFlag("no-publish"))
-        {
+        if (!hasFlag("no-publish")) {
             Hawk.get().getManager().publish(report, url ->
             {
                 sender.sendMessage("");
@@ -93,9 +92,11 @@ public class StopCommand extends Command
     }
 
     @Override
-    protected List<String> complete()
-    {
-        if (args.length == 1) return getMatchingSubset(args[0], "--no-publish");
-        else return null;
+    protected List<String> complete() {
+        if (args.length == 1) {
+            return getMatchingSubset(args[0], "--no-publish");
+        } else {
+            return null;
+        }
     }
 }

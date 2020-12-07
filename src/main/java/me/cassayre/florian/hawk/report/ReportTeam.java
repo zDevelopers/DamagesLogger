@@ -31,36 +31,34 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
+
 package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.scoreboard.Team;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.scoreboard.Team;
 
-public class ReportTeam
-{
-    private String name;
-    private ChatColor color;
-    private Set<UUID> players;
+public class ReportTeam {
+    private final String name;
+    private final ChatColor color;
+    private final Set<UUID> players;
 
     /**
      * Creates a team with a name, a color and some players.
      *
-     * @param name The team's name.
-     * @param color The team's color.
+     * @param name    The team's name.
+     * @param color   The team's color.
      * @param players The players.
      */
-    public ReportTeam(final String name, final ChatColor color, final OfflinePlayer... players)
-    {
+    public ReportTeam(final String name, final ChatColor color, final OfflinePlayer... players) {
         this.name = name;
         this.color = normalizeColor(color);
         this.players = Arrays.stream(players).map(OfflinePlayer::getUniqueId).collect(Collectors.toSet());
@@ -69,65 +67,42 @@ public class ReportTeam
     /**
      * Creates a team with a name, a color and some players.
      *
-     * @param name The team's name.
-     * @param color The team's color.
+     * @param name    The team's name.
+     * @param color   The team's color.
      * @param players The players.
      */
-    public ReportTeam(final String name, final ChatColor color, final Iterable<OfflinePlayer> players)
-    {
+    public ReportTeam(final String name, final ChatColor color, final Iterable<OfflinePlayer> players) {
         this.name = name;
         this.color = normalizeColor(color);
-        this.players = StreamSupport.stream(players.spliterator(), false).map(OfflinePlayer::getUniqueId).collect(Collectors.toSet());
+        this.players = StreamSupport.stream(players.spliterator(), false).map(OfflinePlayer::getUniqueId)
+                .collect(Collectors.toSet());
     }
 
     /**
      * Creates a  uncolored team with a name and some players.
      *
-     * @param name The team's name.
+     * @param name    The team's name.
      * @param players The players.
      */
-    public ReportTeam(final String name, final OfflinePlayer... players)
-    {
+    public ReportTeam(final String name, final OfflinePlayer... players) {
         this(name, null, players);
     }
 
     /**
      * Creates a  uncolored team with a name and some players.
      *
-     * @param name The team's name.
+     * @param name    The team's name.
      * @param players The players.
      */
-    public ReportTeam(final String name, final Iterable<OfflinePlayer> players)
-    {
+    public ReportTeam(final String name, final Iterable<OfflinePlayer> players) {
         this(name, null, players);
-    }
-
-
-    public String getName() { return name; }
-    public ChatColor getColor() { return color; }
-    public Set<UUID> getPlayers() { return Collections.unmodifiableSet(players); }
-
-    public JsonObject toJSON()
-    {
-        final JsonObject json = new JsonObject();
-
-        json.addProperty("name", name);
-        if (color != null) json.addProperty("color", color.name());
-
-        final JsonArray players = new JsonArray();
-        this.players.forEach(player -> players.add(player.toString()));
-
-        json.add("players", players);
-
-        return json;
     }
 
     private static ChatColor normalizeColor(final ChatColor color) {
         return color != null ? (color.isFormat() ? ChatColor.BLACK : color) : null;
     }
 
-    public static ReportTeam fromScoreboardTeam(final Team team)
-    {
+    public static ReportTeam fromScoreboardTeam(final Team team) {
         final String lastColors = ChatColor.getLastColors(team.getPrefix()).substring(1);
 
         return new ReportTeam(
@@ -139,5 +114,33 @@ public class ReportTeam
                 //  players.
                 team.getPlayers()
         );
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ChatColor getColor() {
+        return color;
+    }
+
+    public Set<UUID> getPlayers() {
+        return Collections.unmodifiableSet(players);
+    }
+
+    public JsonObject toJSON() {
+        final JsonObject json = new JsonObject();
+
+        json.addProperty("name", name);
+        if (color != null) {
+            json.addProperty("color", color.name());
+        }
+
+        final JsonArray players = new JsonArray();
+        this.players.forEach(player -> players.add(player.toString()));
+
+        json.add("players", players);
+
+        return json;
     }
 }

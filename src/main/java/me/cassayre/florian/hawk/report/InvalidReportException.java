@@ -31,20 +31,18 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
+
 package me.cassayre.florian.hawk.report;
 
-public class InvalidReportException extends RuntimeException
-{
+public class InvalidReportException extends RuntimeException {
     private final String code;
 
-    public InvalidReportException(final String code, final String message)
-    {
+    public InvalidReportException(final String code, final String message) {
         super(message);
         this.code = code;
     }
 
-    public String getCode()
-    {
+    public String getCode() {
         return code;
     }
 }

@@ -31,6 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
+
 package me.cassayre.florian.hawk.commands;
 
 import fr.zcraft.zlib.components.commands.*;
@@ -41,16 +42,14 @@ import org.bukkit.ChatColor;
 
 import java.util.List;
 
-@CommandInfo (name = "start", usageParameters = "[record title] [--track-new-players] [--stop-track-on-death] [--stop-track-on-disconnection]")
-@WithFlags ({"track-new-players", "stop-track-on-death", "stop-track-on-disconnection"})
-public class StartCommand extends Command
-{
+@CommandInfo(name = "start", usageParameters = "[record title] [--track-new-players] [--stop-track-on-death] [--stop-track-on-disconnection]")
+@WithFlags({"track-new-players", "stop-track-on-death", "stop-track-on-disconnection"})
+public class StartCommand extends Command {
     @Override
-    protected void run() throws CommandException
-    {
-        if (Hawk.get().getReport() != null)
-        {
-            error(I.t("Hawk is still recording. Use \"{0}\" to stop the recording.", Commands.getCommandInfo(StopCommand.class).build()));
+    protected void run() throws CommandException {
+        if (Hawk.get().getReport() != null) {
+            error(I.t("Hawk is still recording. Use \"{0}\" to stop the recording.",
+                    Commands.getCommandInfo(StopCommand.class).build()));
         }
 
         final String title = String.join(" ", args).trim();
@@ -69,9 +68,12 @@ public class StartCommand extends Command
     }
 
     @Override
-    protected List<String> complete()
-    {
-        if (args.length > 0) return getMatchingSubset(args[args.length - 1], "--track-new-players", "--stop-track-on-death", "--stop-track-on-disconnection");
-        else return null;
+    protected List<String> complete() {
+        if (args.length > 0) {
+            return getMatchingSubset(args[args.length - 1], "--track-new-players", "--stop-track-on-death",
+                    "--stop-track-on-disconnection");
+        } else {
+            return null;
+        }
     }
 }

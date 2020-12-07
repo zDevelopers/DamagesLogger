@@ -31,6 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
+
 package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonObject;
@@ -50,8 +51,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class ReportPlayer
-{
+public class ReportPlayer {
     private final UUID uuid;
     private final String name;
 
@@ -61,82 +61,75 @@ public class ReportPlayer
 
     private boolean hasPreviousStatistics = false;
 
-    private Map<Statistic, Integer> previousGenericStatistics = new HashMap<>();
-    private Map<Material, Integer> previousUsedStatistics = new HashMap<>();
-    private Map<Material, Integer> previousMinedStatistics = new HashMap<>();
-    private Map<Material, Integer> previousPickedUpStatistics = new HashMap<>();
+    private final Map<Statistic, Integer> previousGenericStatistics = new HashMap<>();
+    private final Map<Material, Integer> previousUsedStatistics = new HashMap<>();
+    private final Map<Material, Integer> previousMinedStatistics = new HashMap<>();
+    private final Map<Material, Integer> previousPickedUpStatistics = new HashMap<>();
 
-    private Map<Statistic, Integer> genericStatistics = new HashMap<>();
-    private Map<Material, Integer> usedStatistics = new HashMap<>();
-    private Map<Material, Integer> minedStatistics = new HashMap<>();
-    private Map<Material, Integer> pickedUpStatistics = new HashMap<>();
+    private final Map<Statistic, Integer> genericStatistics = new HashMap<>();
+    private final Map<Material, Integer> usedStatistics = new HashMap<>();
+    private final Map<Material, Integer> minedStatistics = new HashMap<>();
+    private final Map<Material, Integer> pickedUpStatistics = new HashMap<>();
 
-    public ReportPlayer(final OfflinePlayer player)
-    {
+    public ReportPlayer(final OfflinePlayer player) {
         this.uuid = player.getUniqueId();
         this.name = player.getName();
 
         collectPreviousStatistics();
     }
 
-    public UUID getUniqueId()
-    {
+    public UUID getUniqueId() {
         return uuid;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public boolean hasPreviousStatistics()
-    {
+    public boolean hasPreviousStatistics() {
         return hasPreviousStatistics;
     }
 
     /**
      * Sets the tag line displayed in the player's list in the reports page.
-     *
+     * <p>
      * In the following example, let's say we want to tag the player as a white
      * werewolf in a Werewolf UHC game.
      *
      * @param tagLine This is the main attribute. It could contains « White Werewolf ».
      */
-    public void setTagLine(final String tagLine)
-    {
+    public void setTagLine(final String tagLine) {
         setTagLine(tagLine, null, null);
     }
 
     /**
      * Sets the tag line displayed in the player's list in the reports page.
-     *
+     * <p>
      * In the following example, let's say we want to tag the player as a white
      * werewolf in a Werewolf UHC game.
      *
-     * @param tagLine This is the main attribute. It could contains « White Werewolf ».
+     * @param tagLine          This is the main attribute. It could contains « White Werewolf ».
      * @param tagLineSecondary This is a secondary attribute displayed smaller, under the main one.
      *                         It could contains « Against the village ».
      */
-    public void setTagLine(final String tagLine, final String tagLineSecondary)
-    {
+    public void setTagLine(final String tagLine, final String tagLineSecondary) {
         setTagLine(tagLine, tagLineSecondary, null);
     }
 
     /**
      * Sets the tag line displayed in the player's list in the reports page.
-     *
+     * <p>
      * In the following example, let's say we want to tag the player as a white
      * werewolf in a Werewolf UHC game.
      *
-     * @param tagLine This is the main attribute. It could contains « White Werewolf ».
+     * @param tagLine          This is the main attribute. It could contains « White Werewolf ».
      * @param tagLineSecondary This is a secondary attribute displayed smaller, under the main one.
      *                         It could contains « Against the village ».
-     * @param tagLineDetails This contains details displayed in a tooltip, so this can be longer.
-     *                       It could contains a description of the role. Line returns ({@code \n})
-     *                       will be preserved.
+     * @param tagLineDetails   This contains details displayed in a tooltip, so this can be longer.
+     *                         It could contains a description of the role. Line returns ({@code \n})
+     *                         will be preserved.
      */
-    public void setTagLine(final String tagLine, final String tagLineSecondary, final String tagLineDetails)
-    {
+    public void setTagLine(final String tagLine, final String tagLineSecondary, final String tagLineDetails) {
         this.tagLine = tagLine;
         this.tagLineSecondary = tagLineSecondary;
         this.tagLineDetails = tagLineDetails;
@@ -147,8 +140,7 @@ public class ReportPlayer
      *
      * @return {@code true} if statistics could be collected (i.e. player was online).
      */
-    public boolean collectStatistics()
-    {
+    public boolean collectStatistics() {
         return collectStatistics(
                 genericStatistics, usedStatistics, minedStatistics, pickedUpStatistics,
                 previousGenericStatistics, previousUsedStatistics, previousMinedStatistics, previousPickedUpStatistics
@@ -157,7 +149,7 @@ public class ReportPlayer
 
     /**
      * Collects and stores the statistics of the given player before the record.
-     *
+     * <p>
      * This allows to in fine only collect & store statistics earned during the record.
      * This method is automatically called when this class is instantiated. But if you want
      * another point of reference for statistics, you can re-call it anytime to set a new
@@ -165,11 +157,14 @@ public class ReportPlayer
      *
      * @return {@code true} if statistics could be collected (i.e. player was online).
      */
-    public boolean collectPreviousStatistics()
-    {
-        final boolean success = collectStatistics(previousGenericStatistics, previousUsedStatistics, previousMinedStatistics, previousPickedUpStatistics);
+    public boolean collectPreviousStatistics() {
+        final boolean success =
+                collectStatistics(previousGenericStatistics, previousUsedStatistics, previousMinedStatistics,
+                        previousPickedUpStatistics);
 
-        if (!hasPreviousStatistics && success) hasPreviousStatistics = true;
+        if (!hasPreviousStatistics && success) {
+            hasPreviousStatistics = true;
+        }
 
         return success;
     }
@@ -179,8 +174,7 @@ public class ReportPlayer
      * all collected previous statistic. As a result, statistics will be global statistics for the
      * player, including statistics before the record.
      */
-    public void resetPreviousStatistics()
-    {
+    public void resetPreviousStatistics() {
         previousGenericStatistics.clear();
         previousUsedStatistics.clear();
         previousMinedStatistics.clear();
@@ -193,8 +187,7 @@ public class ReportPlayer
             final Map<Statistic, Integer> generic,
             final Map<Material, Integer> used,
             final Map<Material, Integer> mined,
-            final Map<Material, Integer> pickedUp)
-    {
+            final Map<Material, Integer> pickedUp) {
         return collectStatistics(
                 generic, used, mined, pickedUp,
                 Collections.emptyMap(),
@@ -213,27 +206,25 @@ public class ReportPlayer
             final Map<Statistic, Integer> previousGeneric,
             final Map<Material, Integer> previousUsed,
             final Map<Material, Integer> previousMined,
-            final Map<Material, Integer> previousPickedUp)
-    {
+            final Map<Material, Integer> previousPickedUp) {
         final Player player = Bukkit.getPlayer(uuid);
-        if (player == null) return false;
+        if (player == null) {
+            return false;
+        }
 
         generic.clear();
         used.clear();
         mined.clear();
         pickedUp.clear();
 
-        for (Statistic statistic : Statistic.values())
-        {
-            if (statistic.getType() == Statistic.Type.UNTYPED)
-            {
+        for (Statistic statistic : Statistic.values()) {
+            if (statistic.getType() == Statistic.Type.UNTYPED) {
                 final int stat = player.getStatistic(statistic) - previousGeneric.getOrDefault(statistic, 0);
-                if (stat > 0) generic.put(statistic, stat);
-            }
-            else
-            {
-                switch (statistic)
-                {
+                if (stat > 0) {
+                    generic.put(statistic, stat);
+                }
+            } else {
+                switch (statistic) {
                     case MINE_BLOCK:
                         collectSubStatistics(player, statistic, mined, previousMined);
                         break;
@@ -247,8 +238,7 @@ public class ReportPlayer
                         // in the version this plugin is compiled for.
                         // The statistics will only be diffused in compatible versions.
                         // The PICKUP statistic is a sub-statistic of type ITEM.
-                        if (statistic.name().equals("PICKUP"))
-                        {
+                        if (statistic.name().equals("PICKUP")) {
                             collectSubStatistics(player, statistic, pickedUp, previousPickedUp);
                         }
                 }
@@ -261,21 +251,20 @@ public class ReportPlayer
     /**
      * Collects all values for a ITEM or BLOCK sub-statistic into a map.
      *
-     * @param player The player to collect statistics for.
+     * @param player    The player to collect statistics for.
      * @param statistic The statistic to collect.
      * @param collector The map were statistics will be stored.
      */
-    private void collectSubStatistics(final Player player, final Statistic statistic, final Map<Material, Integer> collector, final Map<Material, Integer> previous)
-    {
-        for (Material material : Material.values())
-        {
-            try
-            {
+    private void collectSubStatistics(final Player player, final Statistic statistic,
+                                      final Map<Material, Integer> collector, final Map<Material, Integer> previous) {
+        for (Material material : Material.values()) {
+            try {
                 final int stat = player.getStatistic(statistic, material) - previous.getOrDefault(material, 0);
-                if (stat > 0) collector.put(material, stat);
+                if (stat > 0) {
+                    collector.put(material, stat);
+                }
             }
-            catch (IllegalArgumentException ignored)
-            {
+            catch (IllegalArgumentException ignored) {
                 // This material does not have a corresponding statistic (e.g. item for mined statistic).
             }
         }
@@ -294,7 +283,8 @@ public class ReportPlayer
         final JsonObject statistics = new JsonObject();
 
         final JsonObject statisticsGeneric = new JsonObject();
-        genericStatistics.forEach((statistic, value) -> statisticsGeneric.addProperty(ReportsUtils.getStatisticID(statistic), value));
+        genericStatistics.forEach(
+                (statistic, value) -> statisticsGeneric.addProperty(ReportsUtils.getStatisticID(statistic), value));
 
         statistics.add("generic", statisticsGeneric);
         statistics.add("used", toJson(usedStatistics));
@@ -310,14 +300,15 @@ public class ReportPlayer
         final JsonObject json = new JsonObject();
 
         statistics.forEach((material, value) -> {
-            try
-            {
+            try {
                 final String materialID = ItemUtils.getMinecraftId(new ItemStack(material));
-                if (materialID != null) json.addProperty(materialID, value);
+                if (materialID != null) {
+                    json.addProperty(materialID, value);
+                }
             }
-            catch (NMSException e)
-            {
-                PluginLogger.error("Unable to export statistic for {0}: unable to retrieve Minecraft key.", e, material);
+            catch (NMSException e) {
+                PluginLogger
+                        .error("Unable to export statistic for {0}: unable to retrieve Minecraft key.", e, material);
             }
         });
 

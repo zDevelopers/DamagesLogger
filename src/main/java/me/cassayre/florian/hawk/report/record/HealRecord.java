@@ -4,53 +4,36 @@ import com.google.gson.JsonObject;
 import me.cassayre.florian.hawk.report.record.core.LifeChangeRecord;
 import org.bukkit.entity.Player;
 
-public class HealRecord extends LifeChangeRecord
-{
-	public enum HealingType
-    {
-        NATURAL,
-		GOLDEN_APPLE,
-        NOTCH_APPLE,
-        HEALING_POTION,
-        COMMAND,
-        UNKNOWN
-	}
+public class HealRecord extends LifeChangeRecord {
+    private final HealingType healingType;
 
-	private final HealingType healingType;
-
-	public HealRecord(Player player, double points, HealingType healingType)
-    {
+    public HealRecord(Player player, double points, HealingType healingType) {
         super(player, points);
 
         this.healingType = healingType;
-	}
+    }
 
-    public HealRecord(Player player, long startDate, long endDate, double points, HealingType healingType)
-    {
+    public HealRecord(Player player, long startDate, long endDate, double points, HealingType healingType) {
         super(player, startDate, endDate, points, false);
 
         this.healingType = healingType;
     }
 
-	public HealingType getHealingType()
-    {
-		return healingType;
-	}
+    public HealingType getHealingType() {
+        return healingType;
+    }
 
     @Override
-    public boolean isLethal()
-    {
+    public boolean isLethal() {
         return false;
     }
 
-    public boolean similarTo(final HealRecord other)
-    {
+    public boolean similarTo(final HealRecord other) {
         return this.healingType == other.healingType;
     }
 
     @Override
-    public JsonObject toJSON()
-    {
+    public JsonObject toJSON() {
         final JsonObject json = super.toJSON();
 
         json.addProperty("cause", healingType.name());
@@ -61,21 +44,17 @@ public class HealRecord extends LifeChangeRecord
     }
 
     @Override
-    public HealRecord clone()
-    {
-        try
-        {
+    public HealRecord clone() {
+        try {
             return (HealRecord) super.clone();
         }
-        catch (CloneNotSupportedException e)
-        {
+        catch (CloneNotSupportedException e) {
             return null; // Unreachable as the Cloneable interface is implemented.
         }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "HealRecord{" + "healingType=" + healingType +
                 ", points=" + points +
                 ", isLethal=" + isLethal +
@@ -84,5 +63,14 @@ public class HealRecord extends LifeChangeRecord
                 ", endDate=" + endDate +
                 ", updateDate=" + updateDate +
                 '}';
+    }
+
+    public enum HealingType {
+        NATURAL,
+        GOLDEN_APPLE,
+        NOTCH_APPLE,
+        HEALING_POTION,
+        COMMAND,
+        UNKNOWN
     }
 }

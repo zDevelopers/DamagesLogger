@@ -20,37 +20,30 @@ import org.bukkit.potion.PotionType;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-public class PlayerHealsListener implements Listener
-{
+public class PlayerHealsListener implements Listener {
     private final ReportsManager manager;
 
     private Class<?> TIPPED_ARROW_CLASS;
 
-    public PlayerHealsListener(final ReportsManager manager)
-    {
+    public PlayerHealsListener(final ReportsManager manager) {
         this.manager = manager;
 
         // Tipped arrows were not available in Minecraft 1.8
-        try
-        {
+        try {
             TIPPED_ARROW_CLASS = Class.forName("org.bukkit.entity.TippedArrow");
         }
-        catch (ClassNotFoundException e)
-        {
+        catch (ClassNotFoundException e) {
             TIPPED_ARROW_CLASS = null;
         }
     }
 
-    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onEntityRegainHealth(EntityRegainHealthEvent e)
-    {
-        if(e.getEntity() instanceof Player)
-        {
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityRegainHealth(EntityRegainHealthEvent e) {
+        if (e.getEntity() instanceof Player) {
             final Player player = (Player) e.getEntity();
             final HealingType healingType;
 
-            switch (e.getRegainReason())
-            {
+            switch (e.getRegainReason()) {
                 case REGEN:
                 case SATIATED:
                     healingType = HealingType.NATURAL;
@@ -66,57 +59,56 @@ public class PlayerHealsListener implements Listener
         }
     }
 
-    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerItemConsume(PlayerItemConsumeEvent e)
-    {
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerItemConsume(PlayerItemConsumeEvent e) {
         final Material material = e.getItem().getType();
         final boolean isNotchApple = e.getItem().getDurability() == 1; // FIXME Will break with 1.13
 
         final HealingType healingType;
 
-        if (material == Material.GOLDEN_APPLE)
-        {
+        if (material == Material.GOLDEN_APPLE) {
             healingType = isNotchApple ? HealingType.NOTCH_APPLE : HealingType.GOLDEN_APPLE;
-        }
-        else if (material == Material.POTION)
-        {
+        } else if (material == Material.POTION) {
             healingType = HealingType.HEALING_POTION;
-        }
-        else
-        {
+        } else {
             healingType = HealingType.UNKNOWN;
         }
 
         manager._setLastHealingType(e.getPlayer(), healingType);
     }
 
-    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerShootByPositiveTippedArrow(final EntityDamageByEntityEvent ev)
-    {
-        if (!(ev.getEntity() instanceof Player) || ev.getDamager() == null || TIPPED_ARROW_CLASS == null) return;
-        if (!TIPPED_ARROW_CLASS.isAssignableFrom(ev.getDamager().getClass())) return;
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerShootByPositiveTippedArrow(final EntityDamageByEntityEvent ev) {
+        if (!(ev.getEntity() instanceof Player) || ev.getDamager() == null || TIPPED_ARROW_CLASS == null) {
+            return;
+        }
+        if (!TIPPED_ARROW_CLASS.isAssignableFrom(ev.getDamager().getClass())) {
+            return;
+        }
 
         final Arrow tippedArrow = (Arrow) ev.getDamager();
 
-        try
-        {
-            final PotionEffectType mainEffect = ((PotionType) Reflection.call(Reflection.call(tippedArrow, "getBasePotionData"), "getType")).getEffectType();
+        try {
+            final PotionEffectType mainEffect =
+                    ((PotionType) Reflection.call(Reflection.call(tippedArrow, "getBasePotionData"), "getType"))
+                            .getEffectType();
 
             //noinspection unchecked
             final boolean impliesHealthRegain = mainEffect.equals(PotionEffectType.HEAL)
                     || mainEffect.equals(PotionEffectType.REGENERATION)
                     || ((List<PotionEffect>) Reflection.call(tippedArrow, "getCustomEffects")).stream()
-                        .map(PotionEffect::getType)
-                        .anyMatch(effect -> effect.equals(PotionEffectType.HEAL) || effect.equals(PotionEffectType.REGENERATION));
+                    .map(PotionEffect::getType)
+                    .anyMatch(effect -> effect.equals(PotionEffectType.HEAL) ||
+                            effect.equals(PotionEffectType.REGENERATION));
 
-            if (impliesHealthRegain)
-            {
+            if (impliesHealthRegain) {
                 // Specific type for tipped arrows?
                 manager._setLastHealingType((Player) ev.getEntity(), HealingType.HEALING_POTION);
             }
         }
 
         // Minecraft version with a different Bukkit API.
-        catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {}
+        catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+        }
     }
 }

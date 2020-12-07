@@ -31,18 +31,17 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
+
 package me.cassayre.florian.hawk.commands;
 
 import fr.zcraft.zlib.components.commands.Command;
 import fr.zcraft.zlib.components.commands.CommandException;
 import fr.zcraft.zlib.components.commands.CommandInfo;
 
-@CommandInfo (name = "info")
-public class InfoCommand extends Command
-{
+@CommandInfo(name = "info")
+public class InfoCommand extends Command {
     @Override
-    protected void run() throws CommandException
-    {
+    protected void run() throws CommandException {
 
     }
 }

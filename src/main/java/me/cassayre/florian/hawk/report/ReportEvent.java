@@ -31,40 +31,38 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  */
+
 package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonObject;
-import org.bukkit.OfflinePlayer;
-
 import java.time.Instant;
 import java.util.TimeZone;
+import org.bukkit.OfflinePlayer;
 
 /**
  * An event displayed in the game timeline of the report.
  */
-public class ReportEvent
-{
-    private long date;
-    private EventType type;
+public class ReportEvent {
+    private final long date;
+    private final EventType type;
 
-    private String title;
-    private String description;
+    private final String title;
+    private final String description;
 
-    private EventIcon icon;
-    private String iconAttribute;
+    private final EventIcon icon;
+    private final String iconAttribute;
 
-    public ReportEvent(final String title, final String description, final EventIcon icon, final String iconAttribute)
-    {
+    public ReportEvent(final String title, final String description, final EventIcon icon, final String iconAttribute) {
         this(EventType.BLUE, title, description, icon, iconAttribute);
     }
 
-    public ReportEvent(final EventType type, final String title, final String description, final EventIcon icon, final String iconAttribute)
-    {
+    public ReportEvent(final EventType type, final String title, final String description, final EventIcon icon,
+                       final String iconAttribute) {
         this(System.currentTimeMillis(), type, title, description, icon, iconAttribute);
     }
 
-    public ReportEvent(final long date, final EventType type, final String title, final String description, final EventIcon icon, final String iconAttribute)
-    {
+    public ReportEvent(final long date, final EventType type, final String title, final String description,
+                       final EventIcon icon, final String iconAttribute) {
         this.date = date;
         this.type = type;
         this.title = title;
@@ -73,11 +71,62 @@ public class ReportEvent
         this.iconAttribute = iconAttribute;
     }
 
-    public JsonObject toJSON()
-    {
+    public static ReportEvent withPlayer(final EventType type, final String title, final String description,
+                                         final OfflinePlayer player) {
+        return new ReportEvent(type, title, description, EventIcon.PLAYER, player.getUniqueId().toString());
+    }
+
+    public static ReportEvent withPlayer(final EventType type, final String title, final OfflinePlayer player) {
+        return new ReportEvent(type, title, null, EventIcon.PLAYER, player.getUniqueId().toString());
+    }
+
+    public static ReportEvent withPlayer(final String title, final String description, final OfflinePlayer player) {
+        return new ReportEvent(title, description, EventIcon.PLAYER, player.getUniqueId().toString());
+    }
+
+    public static ReportEvent withPlayer(final String title, final OfflinePlayer player) {
+        return new ReportEvent(title, null, EventIcon.PLAYER, player.getUniqueId().toString());
+    }
+
+    public static ReportEvent withIcon(final EventType type, final String title, final String description,
+                                       final String iconID) {
+        return new ReportEvent(type, title, description, EventIcon.ICON, iconID);
+    }
+
+    public static ReportEvent withIcon(final EventType type, final String title, final String iconID) {
+        return new ReportEvent(type, title, null, EventIcon.ICON, iconID);
+    }
+
+    public static ReportEvent withIcon(final String title, final String description, final String iconID) {
+        return new ReportEvent(title, description, EventIcon.ICON, iconID);
+    }
+
+    public static ReportEvent withIcon(final String title, final String iconID) {
+        return new ReportEvent(title, null, EventIcon.ICON, iconID);
+    }
+
+    public static ReportEvent withURL(final EventType type, final String title, final String description,
+                                      final String iconURL) {
+        return new ReportEvent(type, title, description, EventIcon.URL, iconURL);
+    }
+
+    public static ReportEvent withURL(final EventType type, final String title, final String iconURL) {
+        return new ReportEvent(type, title, null, EventIcon.URL, iconURL);
+    }
+
+    public static ReportEvent withURL(final String title, final String description, final String iconURL) {
+        return new ReportEvent(title, description, EventIcon.URL, iconURL);
+    }
+
+    public static ReportEvent withURL(final String title, final String iconURL) {
+        return new ReportEvent(title, null, EventIcon.URL, iconURL);
+    }
+
+    public JsonObject toJSON() {
         final JsonObject json = new JsonObject();
 
-        json.addProperty("date", Instant.ofEpochMilli(date).atZone(TimeZone.getDefault().toZoneId()).toOffsetDateTime().toString());
+        json.addProperty("date",
+                Instant.ofEpochMilli(date).atZone(TimeZone.getDefault().toZoneId()).toOffsetDateTime().toString());
         json.addProperty("type", type.name());
         json.addProperty("title", title);
         json.addProperty("description", description);
@@ -92,76 +141,14 @@ public class ReportEvent
         return json;
     }
 
-    public static ReportEvent withPlayer(final EventType type, final String title, final String description, final OfflinePlayer player)
-    {
-        return new ReportEvent(type, title, description, EventIcon.PLAYER, player.getUniqueId().toString());
-    }
-
-    public static ReportEvent withPlayer(final EventType type, final String title, final OfflinePlayer player)
-    {
-        return new ReportEvent(type, title, null, EventIcon.PLAYER, player.getUniqueId().toString());
-    }
-
-    public static ReportEvent withPlayer(final String title, final String description, final OfflinePlayer player)
-    {
-        return new ReportEvent(title, description, EventIcon.PLAYER, player.getUniqueId().toString());
-    }
-
-    public static ReportEvent withPlayer(final String title, final OfflinePlayer player)
-    {
-        return new ReportEvent(title, null, EventIcon.PLAYER, player.getUniqueId().toString());
-    }
-
-    public static ReportEvent withIcon(final EventType type, final String title, final String description, final String iconID)
-    {
-        return new ReportEvent(type, title, description, EventIcon.ICON, iconID);
-    }
-
-    public static ReportEvent withIcon(final EventType type, final String title, final String iconID)
-    {
-        return new ReportEvent(type, title, null, EventIcon.ICON, iconID);
-    }
-
-    public static ReportEvent withIcon(final String title, final String description, final String iconID)
-    {
-        return new ReportEvent(title, description, EventIcon.ICON, iconID);
-    }
-
-    public static ReportEvent withIcon(final String title, final String iconID)
-    {
-        return new ReportEvent(title, null, EventIcon.ICON, iconID);
-    }
-
-    public static ReportEvent withURL(final EventType type, final String title, final String description, final String iconURL)
-    {
-        return new ReportEvent(type, title, description, EventIcon.URL, iconURL);
-    }
-
-    public static ReportEvent withURL(final EventType type, final String title, final String iconURL)
-    {
-        return new ReportEvent(type, title, null, EventIcon.URL, iconURL);
-    }
-
-    public static ReportEvent withURL(final String title, final String description, final String iconURL)
-    {
-        return new ReportEvent(title, description, EventIcon.URL, iconURL);
-    }
-
-    public static ReportEvent withURL(final String title, final String iconURL)
-    {
-        return new ReportEvent(title, null, EventIcon.URL, iconURL);
-    }
-
-    public enum EventType
-    {
+    public enum EventType {
         BLUE,
         GOLD,
         GREEN,
         RED,
     }
 
-    public enum EventIcon
-    {
+    public enum EventIcon {
         PLAYER("uuid"),
         ICON("icon_id"),
         URL("url"),
@@ -170,8 +157,7 @@ public class ReportEvent
 
         private final String attributeKey;
 
-        EventIcon(final String attributeKey)
-        {
+        EventIcon(final String attributeKey) {
             this.attributeKey = attributeKey;
         }
     }
