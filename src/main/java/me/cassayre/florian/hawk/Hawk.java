@@ -1,15 +1,18 @@
 package me.cassayre.florian.hawk;
 
-import fr.zcraft.zlib.components.commands.Commands;
-import fr.zcraft.zlib.components.i18n.I18n;
-import fr.zcraft.zlib.core.ZPlugin;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import fr.zcraft.quartzlib.components.commands.Commands;
+import fr.zcraft.quartzlib.components.i18n.I18n;
+import fr.zcraft.quartzlib.core.QuartzPlugin;
 import me.cassayre.florian.hawk.commands.InfoCommand;
 import me.cassayre.florian.hawk.commands.StartCommand;
 import me.cassayre.florian.hawk.commands.StopCommand;
 import me.cassayre.florian.hawk.report.Report;
 
-public class Hawk extends ZPlugin
-{
+public class Hawk extends QuartzPlugin {
+    public static final Gson GSON = new GsonBuilder().serializeNulls().create();
+
     private static Hawk instance = null;
 
     private ReportsManager manager = null;

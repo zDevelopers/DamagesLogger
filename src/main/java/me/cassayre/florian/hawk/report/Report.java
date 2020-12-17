@@ -36,21 +36,30 @@ package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import fr.zcraft.zlib.tools.Callback;
-import fr.zcraft.zlib.tools.PluginLogger;
+import fr.zcraft.quartzlib.tools.Callback;
+import fr.zcraft.quartzlib.tools.PluginLogger;
+import java.io.File;
+import java.net.URI;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import me.cassayre.florian.hawk.ReportsManager;
 import me.cassayre.florian.hawk.report.record.DamageRecord;
 import me.cassayre.florian.hawk.report.record.HealRecord;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.scoreboard.Scoreboard;
-
-import java.io.File;
-import java.net.URI;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 
 /**
@@ -212,7 +221,7 @@ public class Report {
      * Registers this report into a manager.
      *
      * @return Current instance, for method chaining.
-     * @see ReportsManager#registerReport(Report) for register consequences (spoiler: positives ones).
+     * @see ReportsManager#registerReport(Report) Register consequences (spoiler: positives ones).
      */
     public Report selfRegister() {
         return selfRegister(ReportsManager.get());
@@ -223,7 +232,7 @@ public class Report {
      *
      * @param manager The manager to register this report into.
      * @return Current instance, for method chaining.
-     * @see ReportsManager#registerReport(Report) for register consequences (spoiler: positives ones).
+     * @see ReportsManager#registerReport(Report) Register consequences (spoiler: positives ones).
      */
     public Report selfRegister(final ReportsManager manager) {
         return manager.registerReport(this);
@@ -233,7 +242,7 @@ public class Report {
      * Unregisters this report into a manager.
      *
      * @return Current instance, for method chaining.
-     * @see ReportsManager#unregisterReport(Report) for unregister consequences.
+     * @see ReportsManager#unregisterReport(Report) Unregister consequences.
      */
     public Report selfUnregister() {
         return selfUnregister(ReportsManager.get());
@@ -244,7 +253,7 @@ public class Report {
      *
      * @param manager The manager to unregister this report from.
      * @return Current instance, for method chaining.
-     * @see ReportsManager#unregisterReport(Report) for unregister consequences.
+     * @see ReportsManager#unregisterReport(Report) Unregister consequences.
      */
     public Report selfUnregister(final ReportsManager manager) {
         return manager.unregisterReport(this);
@@ -591,21 +600,7 @@ public class Report {
     public Report record(final DamageRecord record) {
         ensurePlayer(record.getPlayer());
 
-        final LinkedList<DamageRecord> records =
-                damages.computeIfAbsent(record.getPlayer().getUniqueId(), uuid -> new LinkedList<>());
-
-        // We group consecutive similar damages together.
-        if (!records.isEmpty()) {
-            final DamageRecord latestRecord = records.getLast();
-
-            if (latestRecord.similarTo(record) && latestRecord.inCooldown(
-                    latestRecord.getDamageType() == DamageRecord.DamageType.PLAYER ? COOLDOWN_DAMAGES_PVP :
-                            COOLDOWN_DAMAGES_PVE)) {
-                latestRecord.addPoints(record.getPoints(), record.isLethal() || latestRecord.isLethal());
-                PluginLogger.info(" → Adding +{0} points to {1} damage", record.getPoints(), record.getDamageType());
-                return this;
-            }
-        }
+        final LinkedList<DamageRecord> records = damages.computeIfAbsent(record.getPlayer().getUniqueId(), uuid -> new LinkedList<>());
 
         PluginLogger.info("Recording {0}", record);
 

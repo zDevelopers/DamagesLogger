@@ -36,14 +36,16 @@ package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import fr.zcraft.zlib.tools.items.ItemUtils;
-import fr.zcraft.zlib.tools.reflection.NMSException;
-import me.cassayre.florian.hawk.ReportsUtils;
+import fr.zcraft.quartzlib.tools.items.ItemUtils;
+import fr.zcraft.quartzlib.tools.reflection.NMSException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.*;
 
 public class ReportSettings {
     private final Report report;
@@ -655,7 +657,7 @@ public class ReportSettings {
         final JsonArray jsonStatistics = new JsonArray();
 
         statistics.stream()
-                .map(ReportsUtils::getStatisticID)
+                .map(statistic -> statistic.getKey().toString())
                 .forEach(jsonStatistics::add);
 
         return jsonStatistics;
@@ -668,8 +670,7 @@ public class ReportSettings {
                 .map(material -> {
                     try {
                         return ItemUtils.getMinecraftId(new ItemStack(material));
-                    }
-                    catch (NMSException e) {
+                    } catch (NMSException e) {
                         return null;
                     }
                 })

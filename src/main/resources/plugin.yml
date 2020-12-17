@@ -2,6 +2,7 @@ name: Hawk
 description: 
 main: me.cassayre.florian.hawk.Hawk
 version: 1.0
+api-version: "1.13"
 
 commands:
   hawk:
