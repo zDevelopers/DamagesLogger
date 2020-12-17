@@ -39,20 +39,26 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
-import fr.zcraft.zlib.components.worker.Worker;
-import fr.zcraft.zlib.components.worker.WorkerAttributes;
-import fr.zcraft.zlib.components.worker.WorkerCallback;
-import fr.zcraft.zlib.components.worker.WorkerRunnable;
-import fr.zcraft.zlib.tools.Callback;
-import me.cassayre.florian.hawk.report.InvalidReportException;
-import me.cassayre.florian.hawk.report.Report;
-
-import java.io.*;
+import fr.zcraft.quartzlib.components.worker.Worker;
+import fr.zcraft.quartzlib.components.worker.WorkerAttributes;
+import fr.zcraft.quartzlib.components.worker.WorkerCallback;
+import fr.zcraft.quartzlib.components.worker.WorkerRunnable;
+import fr.zcraft.quartzlib.tools.Callback;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import me.cassayre.florian.hawk.report.InvalidReportException;
+import me.cassayre.florian.hawk.report.Report;
 
 @WorkerAttributes(name = "Reports I/O")
 public class ReportsWorker extends Worker {
@@ -102,7 +108,7 @@ public class ReportsWorker extends Worker {
                 final JsonWriter jsonWriter = new JsonWriter(stringWriter);
 
                 jsonWriter.setLenient(true);
-                jsonWriter.setIndent("    ");
+                jsonWriter.setIndent("  ");
 
                 Streams.write(json, jsonWriter);
 
@@ -166,12 +172,10 @@ public class ReportsWorker extends Worker {
 
                     try {
                         return new URI(jsonResponse.get("uri").getAsString());
-                    }
-                    catch (final URISyntaxException e) {
+                    } catch (final URISyntaxException e) {
                         throw new IOException("The returned URL is invalid", e);
                     }
-                }
-                catch (final JsonSyntaxException e) {
+                } catch (final JsonSyntaxException e) {
                     throw new IOException("HTTP request failed: invalid return type.", e);
                 }
             }
@@ -223,8 +227,7 @@ public class ReportsWorker extends Worker {
 
             try {
                 status = connection.getResponseCode();
-            }
-            catch (final IOException e) {
+            } catch (final IOException e) {
                 // HttpUrlConnection will throw an IOException if any 4XX
                 // response is sent. If we request the status again, this
                 // time the internal status will be properly set, and we'll be
@@ -244,8 +247,7 @@ public class ReportsWorker extends Worker {
                 InputStream stream;
                 try {
                     stream = connection.getInputStream();
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     // Same as before
                     stream = connection.getErrorStream();
                     error = true;
@@ -260,8 +262,7 @@ public class ReportsWorker extends Worker {
                 }
 
                 body = responseBuilder.toString();
-            }
-            finally {
+            } finally {
                 if (in != null) {
                     in.close();
                 }
@@ -280,8 +281,7 @@ public class ReportsWorker extends Worker {
             }
 
             return new HTTPResponse(body, status, error);
-        }
-        finally {
+        } finally {
             connection.disconnect();
         }
     }

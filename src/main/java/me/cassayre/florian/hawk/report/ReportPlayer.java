@@ -35,21 +35,15 @@
 package me.cassayre.florian.hawk.report;
 
 import com.google.gson.JsonObject;
-import fr.zcraft.zlib.tools.PluginLogger;
-import fr.zcraft.zlib.tools.items.ItemUtils;
-import fr.zcraft.zlib.tools.reflection.NMSException;
-import me.cassayre.florian.hawk.ReportsUtils;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 public class ReportPlayer {
     private final UUID uuid;
@@ -233,14 +227,11 @@ public class ReportPlayer {
                         collectSubStatistics(player, statistic, used, previousUsed);
                         break;
 
+                    case PICKUP:
+                        collectSubStatistics(player, statistic, pickedUp, previousPickedUp);
+                        break;
                     default:
-                        // This statistic appeared after 1.8 and is not available
-                        // in the version this plugin is compiled for.
-                        // The statistics will only be diffused in compatible versions.
-                        // The PICKUP statistic is a sub-statistic of type ITEM.
-                        if (statistic.name().equals("PICKUP")) {
-                            collectSubStatistics(player, statistic, pickedUp, previousPickedUp);
-                        }
+                        break;
                 }
             }
         }
@@ -263,8 +254,7 @@ public class ReportPlayer {
                 if (stat > 0) {
                     collector.put(material, stat);
                 }
-            }
-            catch (IllegalArgumentException ignored) {
+            } catch (IllegalArgumentException ignored) {
                 // This material does not have a corresponding statistic (e.g. item for mined statistic).
             }
         }
@@ -284,7 +274,7 @@ public class ReportPlayer {
 
         final JsonObject statisticsGeneric = new JsonObject();
         genericStatistics.forEach(
-                (statistic, value) -> statisticsGeneric.addProperty(ReportsUtils.getStatisticID(statistic), value));
+                (statistic, value) -> statisticsGeneric.addProperty(statistic.getKey().toString(), value));
 
         statistics.add("generic", statisticsGeneric);
         statistics.add("used", toJson(usedStatistics));
@@ -299,19 +289,7 @@ public class ReportPlayer {
     private JsonObject toJson(final Map<Material, Integer> statistics) {
         final JsonObject json = new JsonObject();
 
-        statistics.forEach((material, value) -> {
-            try {
-                final String materialID = ItemUtils.getMinecraftId(new ItemStack(material));
-                if (materialID != null) {
-                    json.addProperty(materialID, value);
-                }
-            }
-            catch (NMSException e) {
-                PluginLogger
-                        .error("Unable to export statistic for {0}: unable to retrieve Minecraft key.", e, material);
-            }
-        });
-
+        statistics.forEach((material, value) -> json.addProperty(material.getKey().toString(), value));
         return json;
     }
 }

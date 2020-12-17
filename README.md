@@ -109,7 +109,7 @@ You first have to shade the library into your `pom.xml`:
                 <relocations>
                     <relocation>
                         <pattern>me.cassayre.florian.hawk</pattern>
-                        <shadedPattern>eu.carrade.amaury.UHCReloaded.hawk</shadedPattern>
+                        <shadedPattern>eu.carrade.amaury.quartzsurvivalgames.hawk</shadedPattern>
                     </relocation>
                 </relocations>
             </configuration>

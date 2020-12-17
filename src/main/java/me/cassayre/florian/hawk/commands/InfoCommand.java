@@ -34,9 +34,9 @@
 
 package me.cassayre.florian.hawk.commands;
 
-import fr.zcraft.zlib.components.commands.Command;
-import fr.zcraft.zlib.components.commands.CommandException;
-import fr.zcraft.zlib.components.commands.CommandInfo;
+import fr.zcraft.quartzlib.components.commands.Command;
+import fr.zcraft.quartzlib.components.commands.CommandException;
+import fr.zcraft.quartzlib.components.commands.CommandInfo;
 
 @CommandInfo(name = "info")
 public class InfoCommand extends Command {

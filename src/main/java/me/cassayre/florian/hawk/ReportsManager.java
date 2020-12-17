@@ -35,20 +35,36 @@
 package me.cassayre.florian.hawk;
 
 import com.google.gson.JsonObject;
-import fr.zcraft.zlib.components.i18n.I;
-import fr.zcraft.zlib.core.ZLib;
-import fr.zcraft.zlib.core.ZLibComponent;
-import fr.zcraft.zlib.tools.Callback;
-import fr.zcraft.zlib.tools.PluginLogger;
-import fr.zcraft.zlib.tools.reflection.Reflection;
-import fr.zcraft.zlib.tools.runners.RunTask;
+import fr.zcraft.quartzlib.components.i18n.I;
+import fr.zcraft.quartzlib.core.QuartzComponent;
+import fr.zcraft.quartzlib.core.QuartzLib;
+import fr.zcraft.quartzlib.tools.Callback;
+import fr.zcraft.quartzlib.tools.PluginLogger;
+import fr.zcraft.quartzlib.tools.reflection.Reflection;
+import fr.zcraft.quartzlib.tools.runners.RunTask;
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.Normalizer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import me.cassayre.florian.hawk.listeners.PlayerConnectionListener;
 import me.cassayre.florian.hawk.listeners.PlayerDamagesListener;
 import me.cassayre.florian.hawk.listeners.PlayerHealsListener;
 import me.cassayre.florian.hawk.report.Report;
 import me.cassayre.florian.hawk.report.ReportPlayer;
-import me.cassayre.florian.hawk.report.record.DamageRecord.DamageType;
-import me.cassayre.florian.hawk.report.record.DamageRecord.Weapon;
+import me.cassayre.florian.hawk.report.record.DamageRecord;
 import me.cassayre.florian.hawk.report.record.HealRecord.HealingType;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
@@ -58,18 +74,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permissible;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
-
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.text.Normalizer;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * The reports manager: registers, saves, manages export & backups of,
@@ -125,13 +129,13 @@ public class ReportsManager extends QuartzComponent {
      * using {@linkplain #backup(Report, Callback, Callback) the backup method}
      * will be saved under a {@code backups} sub-directory.
      */
-    private File saveDirectory = new File(ZLib.getPlugin().getDataFolder(), "reports");
+    private File saveDirectory = new File(QuartzLib.getPlugin().getDataFolder(), "reports");
 
     /**
      * The remote instance base URL where reports will be published to.
      * This URL will always be without trailing slash.
      */
-    private String remoteInstanceURL = "http://hawk.carrade.eu";
+    private String remoteInstanceURL = "http://127.0.0.1:8000";  // FIXME update before commit (and add config)
 
     /**
      * The user agent of the publish request.
@@ -146,12 +150,10 @@ public class ReportsManager extends QuartzComponent {
     /*
      * As Bukkit does not expose the real heal cause (e.g. “golden apple”) in the regen event,
      * we need to keep track of it if auto-track is enabled.
-     * Same idea for damages sources to identify witches, withers…
+     * Same idea for damages sources to identify witches, withers… from poisons or similar.
      */
     private final Map<UUID, HealingType> lastHealingType = new HashMap<>();
-    private final Map<UUID, DamageType> lastDamageType = new HashMap<>();
-    private final Map<UUID, Player> lastMagicDamager = new HashMap<>();
-    private final Map<UUID, Weapon> lastWeapon = new HashMap<>();
+    private final Map<UUID, DamageRecord> lastMagicDamage = new HashMap<>();
 
     /**
      * Initialize the reports manager for use as a shaded library.
@@ -165,8 +167,8 @@ public class ReportsManager extends QuartzComponent {
     public static void init(final JavaPlugin plugin) {
         // This constructor is used by external plugins using
         // this as a shaded library. As such, there is no plugin
-        // so the zLib will not be initialized automatically.
-        // We have to initialize manually the zLib.
+        // so QuartzLib will not be initialized automatically.
+        // We have to initialize manually QuartzLib.
         // We check for existing initialization just to be sure.
         if (!QuartzLib.isInitialized()) {
             QuartzLib.init(plugin);
@@ -193,8 +195,8 @@ public class ReportsManager extends QuartzComponent {
      * @return The slug.
      */
     private static String slug(final String input) {
-        final String nowhitespace = WHITESPACE.matcher(ChatColor.stripColor(input)).replaceAll("-");
-        final String normalized = Normalizer.normalize(nowhitespace, Normalizer.Form.NFD);
+        final String whitespaceless = WHITESPACE.matcher(ChatColor.stripColor(input)).replaceAll("-");
+        final String normalized = Normalizer.normalize(whitespaceless, Normalizer.Form.NFD);
         final String slug = NON_LATIN.matcher(normalized).replaceAll("");
 
         return slug.toLowerCase(Locale.ENGLISH);
@@ -231,8 +233,7 @@ public class ReportsManager extends QuartzComponent {
             }
 
             return hexString.toString();
-        }
-        catch (final Exception ex) {
+        } catch (final Exception ex) {
             return "";
         }
     }
@@ -244,7 +245,7 @@ public class ReportsManager extends QuartzComponent {
         QuartzLib.registerEvents(new PlayerHealsListener(this));
 
         // Boots the I/O worker
-        ZLib.loadComponent(ReportsWorker.class);
+        QuartzLib.loadComponent(ReportsWorker.class);
 
         // Launches the backup task
         setBackup(true);
@@ -282,8 +283,8 @@ public class ReportsManager extends QuartzComponent {
                 Bukkit.getBukkitVersion(),
                 serverVersion,
                 System.getProperty("os.name"),
-                ZLib.getPlugin().getName(),
-                ZLib.getPlugin().getDescription().getVersion()
+                QuartzLib.getPlugin().getName(),
+                QuartzLib.getPlugin().getDescription().getVersion()
         );
 
         if (!minecraftVersion.equals("??")) {
@@ -310,16 +311,14 @@ public class ReportsManager extends QuartzComponent {
 
         if (backup) {
             backupTask = RunTask.timer(() -> reports
-                    .forEach(report -> backup(report, success -> backupErrorWarningSent = false, exception ->
-                    {
-                        PluginLogger
-                                .error("Unable to backup report, is the reports backup directory writable?", exception);
+                    .forEach(report -> backup(report, success -> backupErrorWarningSent = false, exception -> {
+                        PluginLogger.error("Unable to backup report, is the reports backup directory writable?", exception);
 
                         if (!backupErrorWarningSent) {
                             Bukkit.getOnlinePlayers().stream()
                                     .filter(Permissible::isOp)
                                     .forEach(player -> player.sendMessage(
-                                            I.t("{darkred}Warning! {red}The backup file couldn't be saved, please see the console. {gray}This message won't be sent for further failure(s).")));
+                                            I.t("{darkred}Warning! {red}Hawk's backup file couldn't be saved, please see the console. {gray}This message won't be sent for further failure(s).")));
 
                             backupErrorWarningSent = true;
                         }
@@ -532,9 +531,11 @@ public class ReportsManager extends QuartzComponent {
      *
      * @param player      The player.
      * @param healingType The healing type.
+     * @return The given healing, for chaining.
      */
-    public void _setLastHealingType(final Player player, final HealingType healingType) {
+    public HealingType _setLastHealingType(final Player player, final HealingType healingType) {
         lastHealingType.put(player.getUniqueId(), healingType);
+        return healingType;
     }
 
     /**
@@ -549,65 +550,25 @@ public class ReportsManager extends QuartzComponent {
     }
 
     /**
-     * Saves the last damage type for the given player. Internal use but must be public.
-     *
-     * @param player     The player.
-     * @param damageType The damage type.
-     */
-    public void _setLastDamageType(final Player player, final DamageType damageType) {
-        lastDamageType.put(player.getUniqueId(), damageType);
-    }
-
-    /**
-     * Retrieves the last damage type for the given player. Internal use but must be public.
-     *
-     * @param player The player.
-     * @return The latest recorded damage type with {@link #_setLastDamageType(Player, DamageType)},
-     * or {@link DamageType#UNKNOWN} if nothing recorded.
-     */
-    public DamageType _getLastDamageType(final Player player) {
-        return lastDamageType.getOrDefault(player.getUniqueId(), DamageType.UNKNOWN);
-    }
-
-    /**
-     * Saves the last magic damage type for the given player. Internal use but must be public.
+     * Saves the last magic damage for the given player. Internal use but must be public.
      *
      * @param player  The player.
-     * @param damager The damager.
+     * @param damage The damage.
+     * @return The given damage, for chaining.
      */
-    public void _setLastMagicDamager(final Player player, final Player damager) {
-        lastMagicDamager.put(player.getUniqueId(), damager);
+    public DamageRecord _setLastMagicDamage(final Player player, final DamageRecord damage) {
+        lastMagicDamage.put(player.getUniqueId(), damage);
+        return damage;
     }
 
     /**
-     * Retrieves the last magic damage type for the given player. Internal use but must be public.
+     * Retrieves the last magic damage for the given player. Internal use but must be public.
      *
      * @param player The player.
-     * @return The latest recorded damage type with {@link #_setLastMagicDamager(Player, Player)},
-     * or {@link DamageType#UNKNOWN} if nothing recorded.
+     * @return The latest recorded damage with {@link #_setLastMagicDamage(Player, DamageRecord)},
+     *         or {@code null} if nothing recorded.
      */
-    public Player _getLastMagicDamager(final Player player) {
-        return lastMagicDamager.get(player.getUniqueId());
-    }
-
-    /**
-     * Saves the last magic damage type for the given player. Internal use but must be public.
-     *
-     * @param player The player.
-     * @param weapon The weapon.
-     */
-    public void _setLastWeapon(final Player player, final Weapon weapon) {
-        lastWeapon.put(player.getUniqueId(), weapon);
-    }
-
-    /**
-     * Retrieves the last magic damage type for the given player. Internal use but must be public.
-     *
-     * @param player The player.
-     * @return The latest recorded damage type with {@link #_setLastMagicDamager(Player, Player)},
-     * or {@link DamageType#UNKNOWN} if nothing recorded.
-     */
-    public Weapon _getLastWeapon(final Player player) {
-        return lastWeapon.getOrDefault(player.getUniqueId(), Weapon.UNKNOWN);
+    public DamageRecord _getLastMagicDamage(final Player player) {
+        return lastMagicDamage.get(player.getUniqueId());
     }
 }

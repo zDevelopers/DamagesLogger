@@ -1,42 +1,44 @@
 package me.cassayre.florian.hawk.listeners;
 
-import fr.zcraft.zlib.components.i18n.I;
+import fr.zcraft.quartzlib.components.i18n.I;
 import me.cassayre.florian.hawk.ReportsManager;
 import me.cassayre.florian.hawk.report.Report;
 import me.cassayre.florian.hawk.report.ReportEvent;
 import me.cassayre.florian.hawk.report.record.DamageRecord;
-import me.cassayre.florian.hawk.report.record.DamageRecord.DamageType;
-import me.cassayre.florian.hawk.report.record.DamageRecord.Weapon;
-import org.bukkit.ChatColor;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.*;
+import org.bukkit.Material;
+import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.DragonFireball;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Fireball;
+import org.bukkit.entity.Firework;
+import org.bukkit.entity.FishHook;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.LlamaSpit;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.ShulkerBullet;
+import org.bukkit.entity.SizedFireball;
+import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.ThrowableProjectile;
+import org.bukkit.entity.ThrownPotion;
+import org.bukkit.entity.WitherSkull;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-
-import java.util.Map;
+import org.bukkit.projectiles.ProjectileSource;
 
 public class PlayerDamagesListener implements Listener {
     private final ReportsManager manager;
 
-    private Class<?> TIPPED_ARROW_CLASS;
-
     public PlayerDamagesListener(ReportsManager manager) {
         this.manager = manager;
-
-        // Tipped arrows were not available in Minecraft 1.8
-        try {
-            TIPPED_ARROW_CLASS = Class.forName("org.bukkit.entity.TippedArrow");
-        }
-        catch (ClassNotFoundException e) {
-            TIPPED_ARROW_CLASS = null;
-        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -63,336 +65,155 @@ public class PlayerDamagesListener implements Listener {
 
         final Player player = (Player) ev.getEntity();
         final double damages = ev.getFinalDamage();
-
         final boolean isLethal = player.getHealth() - damages <= 0;
 
-        final DamageType damageType = getDamageType(ev, player);
-        final WeaponAttributes weapon = getWeapon(ev, player);
+        if (damages < 0.01) {
+            return;
+        }
 
-        final DamageRecord record;
+        final DamageRecord record = computeRecord(ev, player, damages, isLethal);
 
-        if (damageType == DamageType.PLAYER) {
-            record = new DamageRecord(player, damages, weapon.weapon, weapon.name, weapon.enchantments,
-                    getPlayerDamager(ev, player), isLethal);
-        } else {
-            record = new DamageRecord(player, damages, weapon.weapon, weapon.name, weapon.enchantments, damageType,
-                    isLethal);
+        if (record == null) {
+            return;
         }
 
         manager.getTrackedReportsFor(player).forEach(report -> report.record(record));
-
-        manager._setLastDamageType(player, damageType);
-        manager._setLastWeapon(player, weapon.weapon);
     }
 
-    private DamageType getDamageType(final EntityDamageEvent ev, final Player damaged) {
+    /**
+     * Retrieves the item in the entity's main hand, if this makes sense, or null if
+     * none is found.
+     * @param entity The entity.
+     * @return The item stack in its main hand, or null if either the hand is empty or there is no main hand.
+     */
+    private ItemStack getItemInMainHand(final Entity entity) {
+        final EntityEquipment equipment = entity instanceof LivingEntity
+                ? ((LivingEntity) entity).getEquipment() : null;
+        return equipment != null ? equipment.getItemInMainHand() : null;
+    }
+
+    @SuppressWarnings("CheckStyle")
+    private DamageRecord computeRecord(final EntityDamageEvent ev, final Player damaged, final double damages, final boolean lethal) {
         if (ev instanceof EntityDamageByEntityEvent) {
             final Entity damager = ((EntityDamageByEntityEvent) ev).getDamager();
+            final ItemStack weapon = getItemInMainHand(damager);
 
             if (damager instanceof Player) {
-                return DamageType.PLAYER;
-            } else if (damager instanceof Zombie) {
-                final Zombie zombie = (Zombie) damager;
-
-                if (zombie instanceof PigZombie) {
-                    return DamageType.PIGMAN;
-                } else if (zombie.isVillager()) {
-                    return DamageType.ZOMBIE_VILLAGER;
-                } else {
-                    return DamageType.ZOMBIE;
-                }
-            } else if (damager instanceof Skeleton) {
-                final Skeleton skeleton = (Skeleton) damager;
-
-                // Might be possible in some special cases...
-                return skeleton.getSkeletonType() == Skeleton.SkeletonType.NORMAL ? DamageType.SKELETON :
-                        DamageType.WITHER_SKELETON;
-            } else if (damager instanceof Witch) {
-                return DamageType.WITCH;
-            } else if (damager instanceof Arrow) {
-                final Arrow arrow = (Arrow) damager;
-
-                if (arrow.getShooter() instanceof Player) {
-                    return DamageType.PLAYER;
-                } else if (arrow.getShooter() instanceof Skeleton) {
-                    return DamageType.SKELETON;
-                }
-            } else if (damager instanceof ThrownPotion) {
-                if (((ThrownPotion) damager).getShooter() instanceof Player) {
-                    return DamageType.PLAYER;
-                } else if (((ThrownPotion) damager).getShooter() instanceof Witch) {
-                    return DamageType.WITCH;
-                }
-            } else if (damager instanceof Spider) {
-                final Spider spider = (Spider) damager;
-
-                return spider instanceof CaveSpider ? DamageType.CAVE_SPIDER : DamageType.SPIDER;
-            } else if (damager instanceof Creeper) {
-                return DamageType.CREEPER;
-            } else if (damager instanceof Enderman) {
-                return DamageType.ENDERMAN;
-            } else if (damager instanceof Slime) {
-                final Slime slime = (Slime) damager;
-
-                return slime instanceof MagmaCube ? DamageType.MAGMA_CUBE : DamageType.SLIME;
-            } else if (damager instanceof Ghast) {
-                return DamageType.GHAST;
-            } else if (damager instanceof Blaze) {
-                return DamageType.BLAZE;
-            } else if (damager instanceof Fireball) {
-                final Fireball fireball = (Fireball) damager;
-
-                if (fireball.getShooter() instanceof Blaze) {
-                    return DamageType.BLAZE;
-                } else if (fireball.getShooter() instanceof Ghast) {
-                    return DamageType.GHAST;
-                }
-            } else if (damager instanceof Wolf) {
-                final Wolf wolf = (Wolf) damager;
-
-                // Don't ask me how the wold could be non-angry
-                return wolf.isAngry() ? DamageType.ANGRY_WOLF : DamageType.WOLF;
-            } else if (damager instanceof Silverfish) {
-                return DamageType.SILVERFISH;
-            } else if (damager instanceof IronGolem) {
-                return DamageType.IRON_GOLEM;
-            } else if (damager instanceof LightningStrike) {
-                return DamageType.THUNDERBOLT;
-            } else if (damager instanceof EnderDragon) {
-                return DamageType.ENDER_DRAGON; // Let's just hope for it
-            } else if (damager instanceof Wither) {
-                return DamageType.WITHER;
-            } else if (damager instanceof TNTPrimed) {
-                return DamageType.TNT;
+                return new DamageRecord(damaged, damages, weapon, (Player) damager, lethal);
             }
-        } else {
-            switch (ev.getCause()) {
-                case FIRE:
-                case FIRE_TICK:
-                    return DamageType.FIRE;
 
-                case LAVA:
-                    return DamageType.LAVA;
+            else if (damager instanceof Mob) {
+                return new DamageRecord(damaged, damages, weapon, damager.getType(), lethal);
+            }
 
-                case CONTACT:
-                    return DamageType.CACTUS;
+            else if (damager instanceof Projectile) {
+                final ProjectileSource shooter = ((Projectile) damager).getShooter();
 
-                case FALL:
-                    return DamageType.FALL;
-
-                // Separate FALLING_BLOCK?
-                case SUFFOCATION:
-                case FALLING_BLOCK:
-                    return DamageType.SUFFOCATION;
-
-                case DROWNING:
-                    return DamageType.DROWNING;
-
-                case STARVATION:
-                    return DamageType.STARVATION;
-
-                case WITHER:
-                    switch (manager._getLastDamageType(damaged)) {
-                        // Who knows, if players are given wither potions?
-                        case PLAYER:
-                            return DamageType.PLAYER;
-
-                        case WITHER:
-                            return DamageType.WITHER;
-
-                        case WITHER_SKELETON:
-                        default:
-                            return DamageType.WITHER_SKELETON;
+                if (shooter instanceof Entity) {
+                    if (damager instanceof AbstractArrow || damager instanceof FishHook) {
+                        final ItemStack bowTridentOrFishingRod = getItemInMainHand((Entity) shooter);
+                        if (shooter instanceof Player) {
+                            return new DamageRecord(damaged, damages, bowTridentOrFishingRod, (Player) shooter, lethal);
+                        } else if (shooter instanceof LivingEntity) {
+                            return new DamageRecord(damaged, damages, bowTridentOrFishingRod, ((LivingEntity) shooter).getType(), lethal);
+                        }
                     }
+
+                    else if (damager instanceof ShulkerBullet) {
+                        return new DamageRecord(damaged, damages, null, EntityType.SHULKER, lethal);
+                    }
+
+                    else if (damager instanceof LlamaSpit) {
+                        return new DamageRecord(damaged, damages, null, EntityType.LLAMA, lethal);
+                    }
+
+                    // These are ender pearls, snowballs, experience bottles, and eggs. They should not cause any
+                    // damage but we never know what changes a plugin could make.
+                    else if (damager instanceof ThrowableProjectile) {
+                        if (shooter instanceof Player) {
+                            return new DamageRecord(damaged, damages, ((ThrowableProjectile) damager).getItem(), (Player) shooter, lethal);
+                        } else if (shooter instanceof LivingEntity) {
+                            return new DamageRecord(damaged, damages, ((ThrowableProjectile) damager).getItem(), ((LivingEntity) shooter).getType(), lethal);
+                        }
+                    }
+
+                    else if (damager instanceof ThrownPotion) {
+                        if (shooter instanceof Player) {
+                            return manager._setLastMagicDamage(damaged, new DamageRecord(damaged, damages, ((ThrownPotion) damager).getItem(), (Player) shooter, lethal));
+                        } else if (shooter instanceof LivingEntity) {
+                            return new DamageRecord(damaged, damages, ((ThrownPotion) damager).getItem(), ((LivingEntity) shooter).getType(), lethal);
+                        }
+                    }
+
+                    else if (damager instanceof Fireball) {
+                        if (damager instanceof DragonFireball) {
+                            return new DamageRecord(damaged, damages, null, EntityType.ENDER_DRAGON, lethal);
+                        } else if (damager instanceof WitherSkull) {
+                            return manager._setLastMagicDamage(damaged, new DamageRecord(damaged, damages, null, EntityType.WITHER, lethal));
+                        } else if (damager instanceof SizedFireball) {
+                            if (shooter instanceof Player) {
+                                return new DamageRecord(damaged, damages, ((SizedFireball) damager).getDisplayItem(), (Player) shooter, lethal);
+                            } else if (shooter instanceof LivingEntity) {
+                                return new DamageRecord(damaged, damages, ((SizedFireball) damager).getDisplayItem(), ((LivingEntity) shooter).getType(), lethal);
+                            }
+                        }
+                    }
+
+                    else if (damager instanceof Firework) {
+                        if (shooter instanceof Player) {
+                            return new DamageRecord(damaged, damages, new ItemStack(Material.FIREWORK_ROCKET), (Player) shooter, lethal);
+                        } else if (shooter instanceof LivingEntity) {
+                          return new DamageRecord(damaged, damages, new ItemStack(Material.FIREWORK_ROCKET), ((LivingEntity) shooter).getType(), lethal);
+                        } else {
+                            return new DamageRecord(damaged, damages, null, DamageRecord.DamageCause.BLOCK_EXPLOSION, lethal);
+                        }
+                    }
+                }
+
+                return new DamageRecord(damaged, damages, null, DamageRecord.DamageCause.PROJECTILE, lethal);
+            }
+
+            else if (damager instanceof TNTPrimed) {
+                return new DamageRecord(damaged, damages, null, DamageRecord.DamageCause.BLOCK_EXPLOSION, lethal);
+            }
+
+            return new DamageRecord(damaged, damages, null, DamageRecord.DamageCause.fromBukkit(ev.getCause()), lethal);
+        }
+
+        else {
+            switch (ev.getCause()) {
+                case WITHER:
+                    final DamageRecord lastWitherRecord = manager._getLastMagicDamage(damaged);
+                    if (lastWitherRecord != null) {
+                        switch (lastWitherRecord.getDamageCause()) {
+                            // Who knows, if players are given wither potions?
+                            case PLAYER:
+                            case WITHER:
+                                return lastWitherRecord.cloneWithDamage(damages, lethal);
+
+                            case ENTITY:
+                                if (lastWitherRecord.getEntityDamager() == EntityType.WITHER_SKELETON) {
+                                    return lastWitherRecord.cloneWithDamage(damages, lethal);
+                                }
+                        }
+                    }
+
+                    return new DamageRecord(damaged, damages, null, DamageRecord.DamageCause.WITHER, lethal);
 
                 case POISON:
-                    switch (manager._getLastDamageType(damaged)) {
-                        case PLAYER:
-                            return DamageType.PLAYER;
-
-                        case CAVE_SPIDER:
-                            return DamageType.CAVE_SPIDER;
-
-                        case WITCH:
-                            return DamageType.WITCH;
-
-                        case WITHER:
-                            return DamageType.WITHER;
-
-                        case WITHER_SKELETON:
-                            return DamageType.WITHER_SKELETON;
-
-                        default:
-                            // TODO add 1.13+ fishes
-                            return DamageType.UNKNOWN;
+                    final DamageRecord lastPoisonRecord = manager._getLastMagicDamage(damaged);
+                    if (lastPoisonRecord != null) {
+                        return lastPoisonRecord.cloneWithDamage(damages, lethal);
+                    } else {
+                        return manager._setLastMagicDamage(damaged, new DamageRecord(damaged, damages, null, DamageRecord.DamageCause.MAGIC, lethal));
                     }
+
+                case DRAGON_BREATH:
+                    return new DamageRecord(damaged, damages, null, EntityType.ENDER_DRAGON, lethal);
 
                 default:
-                    // Enum value not available in Minecraft 1.8
-                    if (ev.getCause().name().equals("DRAGON_BREATH")) {
-                        return DamageType.ENDER_DRAGON;
-                    }
+                    return new DamageRecord(damaged, damages, null, DamageRecord.DamageCause.fromBukkit(ev.getCause()), lethal);
             }
-        }
-
-        return DamageType.UNKNOWN;
-    }
-
-    private Player getPlayerDamager(final EntityDamageEvent ev, final Player damaged) {
-        if (ev instanceof EntityDamageByEntityEvent) {
-            final Entity damager = ((EntityDamageByEntityEvent) ev).getDamager();
-
-            if (damager instanceof Player) {
-                return (Player) damager;
-            } else if (damager instanceof Arrow) {
-                if (((Arrow) damager).getShooter() instanceof Player) {
-                    if (TIPPED_ARROW_CLASS != null && TIPPED_ARROW_CLASS.isAssignableFrom(damager.getClass())) {
-                        manager._setLastMagicDamager(damaged, (Player) ((Arrow) damager).getShooter());
-                    }
-
-                    return (Player) ((Arrow) damager).getShooter();
-                } else {
-                    return null;
-                }
-            } else if (damager instanceof ThrownPotion) {
-                if (((ThrownPotion) damager).getShooter() instanceof Player) {
-                    manager._setLastMagicDamager(damaged, (Player) ((ThrownPotion) damager).getShooter());
-                    return (Player) ((ThrownPotion) damager).getShooter();
-                } else {
-                    return null;
-                }
-            } else {
-                return null;
-            }
-        } else if (ev.getCause() == DamageCause.POISON && manager._getLastDamageType(damaged) == DamageType.PLAYER) {
-            return manager._getLastMagicDamager(damaged);
-        } else {
-            return null;
-        }
-    }
-
-    private WeaponAttributes getWeapon(final EntityDamageEvent ev, final Player damaged) {
-        final ItemStack weapon;
-
-        if (ev instanceof EntityDamageByEntityEvent) {
-            final Entity damager = ((EntityDamageByEntityEvent) ev).getDamager();
-
-            if (damager instanceof Arrow) {
-                if (((Arrow) damager).getShooter() instanceof LivingEntity) {
-                    weapon = ((LivingEntity) ((Arrow) damager).getShooter()).getEquipment().getItemInHand();
-                } else {
-                    return new WeaponAttributes(Weapon.UNKNOWN);
-                }
-            } else if (damager instanceof LivingEntity) {
-                weapon = ((LivingEntity) damager).getEquipment().getItemInHand();
-            } else if (damager instanceof ThrownPotion) {
-                return new WeaponAttributes(Weapon.MAGIC);
-            } else {
-                return new WeaponAttributes(Weapon.UNKNOWN);
-            }
-        } else {
-            if (ev.getCause() == DamageCause.MAGIC || ev.getCause() == DamageCause.POISON) {
-                switch (manager._getLastWeapon(damaged)) {
-                    case BOW:
-                        // If it's the same, we don't care about returning enchantments,
-                        // as the damage will be merged with the previous one, containing
-                        // them.
-                        return new WeaponAttributes(Weapon.BOW);
-
-                    case MAGIC:
-                    default:
-                        return new WeaponAttributes(Weapon.MAGIC);
-                }
-            }
-
-            // Wither Skeleton
-            // FIXME Magic Value: a Wither Skeleton could use something else than a stone sword in some special cases.
-            else if (ev.getCause() == DamageCause.WITHER && manager._getLastWeapon(damaged) == Weapon.SWORD_STONE) {
-                return new WeaponAttributes(Weapon.SWORD_STONE);
-            } else {
-                return new WeaponAttributes(Weapon.UNKNOWN);
-            }
-        }
-
-        if (ev.getCause() == DamageCause.THORNS) {
-            return new WeaponAttributes(
-                    Weapon.THORNS,
-                    ev.getEntity() instanceof LivingEntity
-                            ? ((LivingEntity) ev.getEntity()).getEquipment().getChestplate()
-                            : null
-            );
-        }
-
-        switch (weapon.getType()) {
-            case WOODEN_SWORD:
-                return new WeaponAttributes(Weapon.SWORD_WOOD, weapon);
-            case GOLDEN_SWORD:
-                return new WeaponAttributes(Weapon.SWORD_GOLD, weapon);
-            case STONE_SWORD:
-                return new WeaponAttributes(Weapon.SWORD_STONE, weapon);
-            case IRON_SWORD:
-                return new WeaponAttributes(Weapon.SWORD_IRON, weapon);
-            case DIAMOND_SWORD:
-                return new WeaponAttributes(Weapon.SWORD_DIAMOND, weapon);
-            case WOODEN_AXE:
-                return new WeaponAttributes(Weapon.AXE_WOOD, weapon);
-            case GOLDEN_AXE:
-                return new WeaponAttributes(Weapon.AXE_GOLD, weapon);
-            case STONE_AXE:
-                return new WeaponAttributes(Weapon.AXE_STONE, weapon);
-            case IRON_AXE:
-                return new WeaponAttributes(Weapon.AXE_IRON, weapon);
-            case DIAMOND_AXE:
-                return new WeaponAttributes(Weapon.AXE_DIAMOND, weapon);
-            case BOW:
-                return new WeaponAttributes(Weapon.BOW, weapon);
-            default:
-                return new WeaponAttributes(Weapon.FISTS);
-        }
-    }
-
-    private class WeaponAttributes {
-        private final Weapon weapon;
-        private final String name;
-        private final Map<Enchantment, Integer> enchantments;
-
-        private WeaponAttributes(Weapon weapon, String name, Map<Enchantment, Integer> enchantments) {
-            this.weapon = weapon;
-            this.name = name;
-            this.enchantments = enchantments;
-        }
-
-        private WeaponAttributes(Weapon weapon, Map<Enchantment, Integer> enchantments) {
-            this.weapon = weapon;
-            this.name = null;
-            this.enchantments = enchantments;
-        }
-
-        private WeaponAttributes(Weapon weapon, String name) {
-            this.weapon = weapon;
-            this.name = name;
-            this.enchantments = null;
-        }
-
-        private WeaponAttributes(Weapon weapon, ItemStack item) {
-            this.weapon = weapon;
-            this.name = getDisplayName(item);
-            this.enchantments = item.getEnchantments();
-        }
-
-        private WeaponAttributes(Weapon weapon) {
-            this.weapon = weapon;
-            this.name = null;
-            this.enchantments = null;
-        }
-
-        private String getDisplayName(final ItemStack item) {
-            if (item == null || !item.hasItemMeta()) {
-                return null;
-            }
-            final ItemMeta meta = item.getItemMeta();
-
-            return meta.hasDisplayName() ? ChatColor.stripColor(meta.getDisplayName()).trim() : null;
         }
     }
 }

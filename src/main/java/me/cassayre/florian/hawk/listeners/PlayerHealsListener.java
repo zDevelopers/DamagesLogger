@@ -1,6 +1,8 @@
 package me.cassayre.florian.hawk.listeners;
 
-import fr.zcraft.zlib.tools.reflection.Reflection;
+import fr.zcraft.quartzlib.tools.reflection.Reflection;
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import me.cassayre.florian.hawk.ReportsManager;
 import me.cassayre.florian.hawk.report.record.HealRecord;
 import me.cassayre.florian.hawk.report.record.HealRecord.HealingType;
@@ -16,9 +18,6 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 
 public class PlayerHealsListener implements Listener {
     private final ReportsManager manager;
