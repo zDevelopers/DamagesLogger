@@ -65,6 +65,9 @@ public class StartCommand extends Command {
                 .autoTrackNewPlayers(hasFlag("track-new-players"))
                 .stopTrackOnDeath(hasFlag("stop-track-on-death"))
                 .stopTrackOnDisconnection(hasFlag("stop-track-on-disconnection"))
+                .settings()
+                    .withGenerator("Hawk Plugin", "")
+                    .done()
         );
 
         success(I.t("Recording has been started."));

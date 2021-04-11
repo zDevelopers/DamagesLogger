@@ -33,7 +33,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
+                <version>3.8.1</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -42,25 +42,28 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4</version>
+                <version>3.2.4</version>
                 <configuration>
                     <minimizeJar>true</minimizeJar>
                     <artifactSet>
                         <includes>
                             <include>fr.zcraft:quartzlib</include>
-                            <include>fr.zcraft:quartzteams</include>
                         </includes>
                     </artifactSet>
                     <relocations>
                         <relocation>
                             <pattern>fr.zcraft.quartzlib</pattern>
-                            <shadedPattern>me.cassayre.florian.DamagesLogger.quartzlib</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>fr.zcraft.quartzteams</pattern>
-                            <shadedPattern>me.cassayre.florian.DamagesLogger.quartzteams</shadedPattern>
+                            <shadedPattern>me.cassayre.florian.hawk.quartzlib</shadedPattern>
                         </relocation>
                     </relocations>
+                    <filters>
+                        <filter>
+                            <artifact>fr.zcraft:quartzlib</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.MF</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                 </configuration>
                 <executions>
                     <execution>
@@ -83,10 +86,6 @@
             <id>zdevelopers-quartzlib</id>
             <url>https://maven.zcraft.fr/QuartzLib</url>
         </repository>
-        <repository>
-            <id>zdevelopers-quartzteams</id>
-            <url>https://maven.zcraft.fr/QuartzTeams</url>
-        </repository>
     </repositories>
 
     <dependencies>
@@ -99,7 +98,7 @@
         <dependency>
             <groupId>fr.zcraft</groupId>
             <artifactId>quartzlib</artifactId>
-            <version>0.0.2</version>
+            <version>0.0.4</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
         <dependency>
