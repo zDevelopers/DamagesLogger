@@ -1,0 +1,67 @@
+name: Build documentation
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  javadoc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+
+      - name: Cache all the things
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build JavaDoc
+        run: mvn -B javadoc:javadoc --file pom.xml
+
+      - name: Checkout website repository
+        uses: actions/checkout@v2
+        with:
+          repository: zDevelopers/zdevelopers.github.io
+          path: web
+          branch: master
+          persist-credentials: false
+
+      - name: Push built documentation to website repository
+        shell: bash
+        run: |
+          # Extract project name
+          PROJECT_NAME=${GITHUB_REPOSITORY##*/}
+          PROJECT_NAME_LOWER=${PROJECT_NAME,,}
+
+          # Create dir if needed, cleanup old doc and copy new one
+          mkdir -p web/static/docs/
+          rm -rf web/static/docs/$PROJECT_NAME_LOWER
+          cp -r target/site/apidocs web/static/docs/$PROJECT_NAME_LOWER
+
+          # Go to website repository
+          cd web
+
+          # Configure git to push to this repository
+          git config --global user.name QuartzBot
+          git config --global user.email moriplay@zcraft.fr
+          git config --global user.password ${{ secrets.QUARTZ_BOT_TOKEN }}
+
+          # Add files
+          echo ::group::Commit
+          git add .
+          git commit -m "Updated documentation for $PROJECT_NAME"
+          echo ::endgroup::
+
+          # Push
+          echo ::group::Push
+          git push https://QuartzBot:${{ secrets.QUARTZ_BOT_TOKEN }}@github.com/zDevelopers/zdevelopers.github.io.git
+          echo ::endgroup::
+
