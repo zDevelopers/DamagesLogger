@@ -37,7 +37,6 @@ package me.cassayre.florian.hawk.report;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import fr.zcraft.quartzlib.tools.Callback;
-import fr.zcraft.quartzlib.tools.PluginLogger;
 import java.io.File;
 import java.net.URI;
 import java.time.Instant;
@@ -69,9 +68,7 @@ import org.bukkit.scoreboard.Scoreboard;
  * a JSON format that can be used to build an user-friendly report.
  */
 public class Report {
-    private final static long COOLDOWN_DAMAGES_PVP = 10L * 1000;
-    private final static long COOLDOWN_DAMAGES_PVE = 10L * 1000;
-    private final static long COOLDOWN_HEALS = 3L * 1000;
+    private final static long COOLDOWN_HEALS = 10L * 1000;
 
     /**
      * An unique ID for this report.
@@ -432,7 +429,6 @@ public class Report {
     public Report track(OfflinePlayer player) {
         ensurePlayer(player);
         trackedPlayers.add(player.getUniqueId());
-        PluginLogger.info("Now tracking {0}", player.getName());
 
         return this;
     }
@@ -601,10 +597,8 @@ public class Report {
         ensurePlayer(record.getPlayer());
 
         final LinkedList<DamageRecord> records = damages.computeIfAbsent(record.getPlayer().getUniqueId(), uuid -> new LinkedList<>());
-
-        PluginLogger.info("Recording {0}", record);
-
         records.addLast(record.clone());
+
         return this;
     }
 
@@ -626,12 +620,9 @@ public class Report {
 
             if (latestRecord.similarTo(record) && latestRecord.inCooldown(COOLDOWN_HEALS)) {
                 latestRecord.addPoints(record.getPoints());
-                PluginLogger.info(" → Adding +{0} points to {1} heal", record.getPoints(), record.getHealingType());
                 return this;
             }
         }
-
-        PluginLogger.info("Recording {0}", record);
 
         records.addLast(record.clone());
         return this;
