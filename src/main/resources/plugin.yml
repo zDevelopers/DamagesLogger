@@ -1,7 +1,7 @@
 name: Hawk
-description: 
+description: A tool to track actions and generate web game reports
 main: me.cassayre.florian.hawk.Hawk
-version: 1.0
+version: 2.0
 api-version: "1.13"
 
 commands:
