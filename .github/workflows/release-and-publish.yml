@@ -54,12 +54,12 @@ jobs:
           TAG_NAME=${GIT_REF_NAME##*/}
           REVISION_NAME=${TAG_NAME:1}
 
-          mvn -B deploy "-Drevision=$REVISION_NAME"
+          mvn -B deploy -am "-Drevision=$REVISION_NAME"
 
           # Maven shade keeps the unshaded JAR under target/original-vvv.jar
           # We don't want to put this unshaded JAR in the release because it wouldn't
           # work on a server.
-          JAR_PATH=$(ls ./target/*.jar | grep -vE "^./[^/]+/original-" | tail -n 1)
+          JAR_PATH=$(ls ./target/*.jar | grep -E "^./[^/]+/(.+)-jar-with-dependencies" | tail -n 1)
           JAR_NAME=$(basename $JAR_PATH)
 
           echo "::set-output name=jar_path::$JAR_PATH"
