@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.scoreboard.Team;
@@ -102,6 +103,15 @@ public class ReportTeam {
         return color != null ? (color.isFormat() ? ChatColor.BLACK : color) : null;
     }
 
+    /**
+     * Converts a Scoreboard team to a Hawk team. All entries from the team will be matched against known players,
+     * and matches will be added to the Hawk team.
+     *
+     * <p>The team color will be extracted from the team name formatting (if any).</p>
+     *
+     * @param team The scoreboard team.
+     * @return A corresponding Hawk team.
+     */
     public static ReportTeam fromScoreboardTeam(final Team team) {
         final String lastColors = ChatColor.getLastColors(team.getPrefix()).substring(1);
 
@@ -109,10 +119,11 @@ public class ReportTeam {
                 team.getName(),
                 lastColors.length() > 0 ? ChatColor.getByChar(lastColors) : null,
 
-                // FIXME deprecated in future versions. Should use getEntries
-                //  (-> Set<String>) and match the entries against known offline
-                //  players.
-                team.getPlayers()
+                team.getEntries().stream()
+                        .map(Bukkit::matchPlayer)
+                        .filter(matches -> !matches.isEmpty())
+                        .map(matches -> matches.get(0))
+                        .collect(Collectors.toList())
         );
     }
 
