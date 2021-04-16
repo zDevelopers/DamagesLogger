@@ -144,7 +144,7 @@ public class ReportPlayer {
     /**
      * Collects and stores the statistics of the given player before the record.
      * <p>
-     * This allows to in fine only collect & store statistics earned during the record.
+     * This allows to in fine only collect &amp; store statistics earned during the record.
      * This method is automatically called when this class is instantiated. But if you want
      * another point of reference for statistics, you can re-call it anytime to set a new
      * previous-statistics-reference.

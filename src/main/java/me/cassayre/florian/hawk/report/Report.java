@@ -284,8 +284,8 @@ public class Report {
     }
 
     /**
-     * Enables or disables auto-track of all players damages & heals. If disabled,
-     * you'll have to manually register damages & heals for them to be recorded.
+     * Enables or disables auto-track of all players damages &amp; heals. If disabled,
+     * you'll have to manually register damages &amp; heals for them to be recorded.
      * <p>
      * Enabled by default.
      *
@@ -384,7 +384,7 @@ public class Report {
 
     /**
      * Registers one or more players to be in the report.
-     * If auto-track is enabled, this will also automatically track the players damages & heals.
+     * If auto-track is enabled, this will also automatically track the players damages &amp; heals.
      *
      * @param players The players to add to the report.
      * @return Current instance, for method chaining.
@@ -395,7 +395,7 @@ public class Report {
 
     /**
      * Registers one or more players to be in the report.
-     * If auto-track is enabled, this will also automatically track the players damages & heals.
+     * If auto-track is enabled, this will also automatically track the players damages &amp; heals.
      *
      * @param players The players to add to the report.
      * @return Current instance, for method chaining.
@@ -411,7 +411,7 @@ public class Report {
 
     /**
      * Registers all online players to be in the report.
-     * If auto-track is enabled, this will also automatically track the players damages & heals.
+     * If auto-track is enabled, this will also automatically track the players damages &amp; heals.
      *
      * @return Current instance, for method chaining.
      */
@@ -493,6 +493,8 @@ public class Report {
      * Teams registered will be displayed in the report' summary page, and all
      * players referenced in the report page will be colored (with a border or
      * on hover) according to their team.
+     *
+     * @param scoreboard The scoreboard to extract teams from.
      *
      * @return Current instance, for method chaining.
      * @see #registerTeamsFromScoreboard() Shortcut to register all teams already in the main scoreboard.

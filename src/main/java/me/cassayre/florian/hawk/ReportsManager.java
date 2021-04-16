@@ -182,6 +182,8 @@ public class ReportsManager extends QuartzComponent {
 
     /**
      * Retrieves the Reports Manager instance.
+     *
+     * @return the unique instance.
      */
     public static ReportsManager get() {
         return Hawk.get() != null && Hawk.get().getManager() != null ? Hawk.get().getManager() : instance;
@@ -358,7 +360,7 @@ public class ReportsManager extends QuartzComponent {
     }
 
     /**
-     * <p>Sets the directory where the reports & reports backups wll be saved by
+     * <p>Sets the directory where the reports &amp; reports backups wll be saved by
      * default.</p>
      *
      * <p>Reports saved using {@linkplain #save(Report, Callback, Callback) the
