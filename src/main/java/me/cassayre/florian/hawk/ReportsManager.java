@@ -76,7 +76,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
- * The reports manager: registers, saves, manages export & backups of,
+ * The reports manager: registers, saves, manages export &amp; backups of,
  * all reports.
  * <p>
  * If you use this without the plugin, by shading the library, you must
